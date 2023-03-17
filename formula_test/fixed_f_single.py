@@ -24,11 +24,18 @@ class single_fg(vanilla_fg):
         self.data_s = loading.load_data(path = data_path, id = s_id)
 
     
-    def get_transfer_g(self):
-        pass
+    def s_tr_g_train(self):
+        
+        images, labels = next(iter(self.data))
+
+        
+
+        g_y = np.array([g[torch.where(labels == i)][0] for i in range(labels.max()+1)])
+
+        return g_y
 
 
-    def get_g_s(self, alpha=0.2):
+    def s_tr_g_cal(self, alpha=0.2):
 
         images, labels = next(iter(self.data))
         # take the first batch as input data
@@ -41,8 +48,7 @@ class single_fg(vanilla_fg):
         f_s = self.model_f(Variable(images_s).to(self.device)).cpu().detach().numpy()
         g_s = self.model_g(Variable(labels_one_hot_s).to(self.device)).cpu().detach().numpy()
 
-        # g = self.get_transfer_g()
-        g = (1-alpha) * g + alpha * g_s
+        # g = (1-alpha) * g + alpha * g_s
 
         # expectation and normalization of f and g
         e_f = f.mean(0)
@@ -56,36 +62,11 @@ class single_fg(vanilla_fg):
         ce_f_s = self. get_conditional_exp(f_s, images_s, labels_s)
         g_y_hat = np.linalg.inv(gamma_f).dot(((1-alpha) * ce_f + alpha * ce_f_s).T).T
         
-        g_y = np.array([g[torch.where(labels == i)][0] for i in range(labels.max()+1)])
         
-        g_rand = np.random.random(g_y.shape)
-
-        return g_rand, g_y, g_y_hat
-
-
-
-    # # classification accuracy with different gy
-    # def get_accuracy(self, gc):
         
-    #     acc = 0
-    #     total = 0
+        g_rand = np.random.random(g_y_hat.shape)
 
-    #     for images, labels in self.test_data:
-
-    #         labels= labels.numpy()
-    #         fc=self.model_f(Variable(images).to(self.device)).data.cpu().numpy()
-    #         f_mean=np.sum(fc,axis=0)/fc.shape[0]
-    #         fcp=fc-f_mean
-            
-    #         gce=np.sum(gc,axis=0)/self.n_label
-    #         gcp=gc-gce
-    #         fgp=np.dot(fcp,gcp.T)
-    #         acc += (np.argmax(fgp, axis = 1) == labels).sum()
-    #         print(np.where(np.argmax(fgp, axis = 1) != labels))
-    #         total += len(images)
-
-    #     acc = float(acc) / total
-    #     return acc
+        return g_rand, g_y_hat
 
 
 
@@ -93,8 +74,8 @@ if __name__ == '__main__':
     import time
 
     DATA_PATH = "/home/viki/Codes/MultiSource/2/multi-source/data_set_2/"
-    MODEL_PATH = "/home/viki/Codes/MultiSource/3/formula_test/weight/"
-    SAVE_PATH = "/home/viki/Codes/MultiSource/3/formula_test/results/"
+    MODEL_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/formula_test/weight/"
+    SAVE_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/formula_test/results/"
     N_TASK = 21
     alpha = 0.4
 
@@ -105,7 +86,8 @@ if __name__ == '__main__':
         for id in range(21):
             cal = single_fg(DATA_PATH, MODEL_PATH, t_id=t_id, s_id=id)
             
-            g_r, g, g_hat = cal.get_g_s(alpha)
+            g = cal.s_tr_g_train(alpha)
+            g_r, g_hat = cal.s_tr_g_cal(alpha)
             rand = cal.get_accuracy(gc=g_r)
             org = cal.get_accuracy(gc=g)
             hat = cal.get_accuracy(gc=g_hat)

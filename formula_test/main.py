@@ -7,7 +7,7 @@ import display
 # DATA_PATH = r"D:\task\research\codes\MultiSource\wsl\2\multi-source\data_set_2\\"
 # MODEL_PATH = r"D:\task\research\codes\MultiSource\wsl\1\weight_set_2\\"
 DATA_PATH = "/home/viki/Codes/MultiSource/2/multi-source/data_set_2/"
-MODEL_PATH = "weight/"
+MODEL_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/formula_test/weight/"
 
 N_TASK = 21
 
