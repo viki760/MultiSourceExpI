@@ -1,0 +1,13 @@
+
+# 保留 README.md
+!README.md
+# 保留所有 .py 文件
+!*.py
+
+*.npy
+*.ipynb
+ace*
+
+data/
+results/
+weight/
