@@ -183,4 +183,4 @@ for id in range(N_TASK):
         torch.save(model_g.state_dict(), save_path_g)
 
 print(ACC_ALL)
-np.savetxt(ACC_ALL, SAVE_PATH+'acc_transfer.npy')
+np.savetxt(ACC_ALL, (SAVE_PATH+'acc_transfer.npy'))

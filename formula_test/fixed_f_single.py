@@ -18,16 +18,23 @@ class single_fg(vanilla_fg):
     calculation with fixed feature extractor with single source transfer only
     '''
 
-    def __init__(self, data_path, model_path, t_id, batch_size=None, s_id=0):
+    def __init__(self, data_path, model_path, t_id, batch_size=None, s_id=0, alpha = 0.4):
         
         super(single_fg, self).__init__(data_path=data_path, model_path=model_path, t_id=t_id, batch_size=batch_size)   
         self.data_s = loading.load_data(path = data_path, id = s_id)
 
+        self.model_f_tr = self.model_f.load_state_dict(torch.load(model_path+'f_task_t='+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth', map_location=self.device))
+        self.model_g_tr = self.model_g.load_state_dict(torch.load(model_path+'f_task_t='+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth'+'.pth', map_location=self.device))
+
+        self.alpha = alpha
+
     
     def s_tr_g_train(self):
         
-        images, labels = next(iter(self.data))
-
+        _, labels = next(iter(self.data))
+        labels_one_hot = torch.zeros(len(labels), self.n_label).scatter_(1, labels.view(-1,1), 1)
+        # f = self.model_f_tr(Variable(images).to(self.device)).cpu().detach().numpy()
+        g = self.model_g_tr(Variable(labels_one_hot).to(self.device)).cpu().detach().numpy()
         
 
         g_y = np.array([g[torch.where(labels == i)][0] for i in range(labels.max()+1)])
@@ -35,7 +42,7 @@ class single_fg(vanilla_fg):
         return g_y
 
 
-    def s_tr_g_cal(self, alpha=0.2):
+    def s_tr_g_cal(self):
 
         images, labels = next(iter(self.data))
         # take the first batch as input data
@@ -60,9 +67,7 @@ class single_fg(vanilla_fg):
 
         ce_f = self. get_conditional_exp(f, images, labels)
         ce_f_s = self. get_conditional_exp(f_s, images_s, labels_s)
-        g_y_hat = np.linalg.inv(gamma_f).dot(((1-alpha) * ce_f + alpha * ce_f_s).T).T
-        
-        
+        g_y_hat = np.linalg.inv(gamma_f).dot(((1-self.alpha) * ce_f + self.alpha * ce_f_s).T).T        
         
         g_rand = np.random.random(g_y_hat.shape)
 
@@ -84,10 +89,10 @@ if __name__ == '__main__':
         acc = np.zeros((N_TASK,3))
         
         for id in range(21):
-            cal = single_fg(DATA_PATH, MODEL_PATH, t_id=t_id, s_id=id)
+            cal = single_fg(DATA_PATH, MODEL_PATH, t_id=t_id, s_id=id, alpha=alpha)
             
-            g = cal.s_tr_g_train(alpha)
-            g_r, g_hat = cal.s_tr_g_cal(alpha)
+            g = cal.s_tr_g_train()
+            g_r, g_hat = cal.s_tr_g_cal()
             rand = cal.get_accuracy(gc=g_r)
             org = cal.get_accuracy(gc=g)
             hat = cal.get_accuracy(gc=g_hat)
