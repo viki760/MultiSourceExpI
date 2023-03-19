@@ -5,7 +5,7 @@
 !*.py
 
 *.npy
-*.ipynb
+# *.ipynb
 ace*
 
 data/

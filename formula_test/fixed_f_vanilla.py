@@ -8,72 +8,58 @@ from torch.autograd import Variable
 import numpy as np
 from matplotlib import pyplot as plt
 from torch.utils.data import Dataset,DataLoader,TensorDataset
-import time
 import loading
+from fixed_f_vanilla import vanilla_fg
+from OTCE import OTCE
 
 
-class vanilla_fg():
+class single_fg(vanilla_fg):
 
     '''
-    calculation with fixed feature extractor w/o transfer
+    calculation with fixed feature extractor with single source transfer only
     '''
 
-    def __init__(self, data_path, model_path, t_id=0, batch_size=None):
-        self.data_path = data_path
-        self.model_path = model_path
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.data = self.load(id=t_id, batch_size=batch_size)
-        self.test_data = self.load(id=t_id, batch_size=batch_size, t=1)
-        self.model_f, self.model_g = loading.load_model(path = model_path, id = t_id)
-        self.n_label= int(next(iter(self.data))[1].max()+1)
-
-
-    def load(self, id, batch_size = None, t=0):
+    def __init__(self, data_path, model_path, t_id, batch_size=None, s_id=0, alpha = 0.4):
         
-        data = loading.load_data(path = self.data_path, id=id, batch_size=batch_size, t=t)
-        return data
+        super(single_fg, self).__init__(data_path=data_path, model_path=model_path, t_id=t_id, batch_size=batch_size)   
+        self.data_s = loading.load_data(path = data_path, id = s_id)
 
+        self.model_f_tr, self.model_g_tr = loading.load_model()
+        self.model_f_tr.load_state_dict(torch.load(model_path+'f_task_t='+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth', map_location=self.device))
+        self.model_g_tr.load_state_dict(torch.load(model_path+'g_task_t='+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth', map_location=self.device))
+        self.model_f_tr.eval()
+        self.model_g_tr.eval()
 
-    # estimate the distribution of labels using given data samples
-    def get_distribution_y(self, data_y):
-        '''
-        calculate the distribution of labels given data_y
-        '''
+        self.alpha = alpha
 
-        px = np.zeros(self.n_label)
-
-        for i in range(self.n_label):
-            for j in data_y:
-                if j == i:
-                    px[i] += 1
-
-        return px / data_y.size
     
-    # expectation of fx
-    def get_exp(self, fx):
-        return np.mean(fx, axis=1)
-
-    # conditional expectation of fx
-    def get_conditional_exp(self, fx, x, y):
-
-        # calculate conditional expectation of fx
-        ce_f = np.zeros((self.n_label, fx.shape[1]))
-
-        for i in range(self.n_label):
-            x_i = x[np.where(y==i)]
-            fx_i = self.model_f(Variable(x_i).to(self.device)).cpu().detach().numpy() - fx.mean(0)
-            ce_f[i] = fx_i.mean(axis=0)
+    def s_tr_g_train(self):
         
-        return ce_f
+        _, labels = next(iter(self.data))
+        labels_one_hot = torch.zeros(len(labels), self.n_label).scatter_(1, labels.view(-1,1), 1)
+
+        g = self.model_g_tr(Variable(labels_one_hot).to(self.device)).cpu().detach().numpy()
         
 
-    def get_g(self):
+        g_y = np.array([g[torch.where(labels == i)][0] for i in range(labels.max()+1)])
+
+        return g_y
+
+
+    def s_tr_g_cal(self):
 
         images, labels = next(iter(self.data))
         # take the first batch as input data
         labels_one_hot = torch.zeros(len(labels), self.n_label).scatter_(1, labels.view(-1,1), 1)
         f = self.model_f(Variable(images).to(self.device)).cpu().detach().numpy()
         g = self.model_g(Variable(labels_one_hot).to(self.device)).cpu().detach().numpy()
+
+        images_s, labels_s = next(iter(self.data_s))
+        labels_one_hot_s = torch.zeros(len(labels_s), self.n_label).scatter_(1, labels_s.view(-1,1), 1)
+        f_s = self.model_f(Variable(images_s).to(self.device)).cpu().detach().numpy()
+        g_s = self.model_g(Variable(labels_one_hot_s).to(self.device)).cpu().detach().numpy()
+
+        # g = (1-alpha) * g + alpha * g_s
 
         # expectation and normalization of f and g
         e_f = f.mean(0)
@@ -84,26 +70,22 @@ class vanilla_fg():
         gamma_f = n_f.T.dot(n_f) / n_f.shape[0]
 
         ce_f = self. get_conditional_exp(f, images, labels)
-        g_y_hat = np.linalg.inv(gamma_f).dot(ce_f.T).T
+        ce_f_s = self. get_conditional_exp(f_s, images_s, labels_s)
+        g_y_hat = np.linalg.inv(gamma_f).dot(((1-self.alpha) * ce_f + self.alpha * ce_f_s).T).T        
         
-        g_y = np.array([g[torch.where(labels == i)][0] for i in range(labels.max()+1)])
-        
-        g_rand = np.random.random(g_y.shape)
+        g_rand = np.random.random(g_y_hat.shape)
 
-        return g_rand, g_y, g_y_hat
-
-
-
-    # classification accuracy with different gy
-    def get_accuracy(self, gc):
-        
+        return g_rand, g_y_hat
+    
+    def get_accuracy_with_f(self):
+        gc = self.s_tr_g_train()
         acc = 0
         total = 0
 
         for images, labels in self.test_data:
 
             labels= labels.numpy()
-            fc=self.model_f(Variable(images).to(self.device)).data.cpu().numpy()
+            fc=self.model_f_tr(Variable(images).to(self.device)).data.cpu().numpy()
             f_mean=np.sum(fc,axis=0)/fc.shape[0]
             fcp=fc-f_mean
             
@@ -116,26 +98,46 @@ class vanilla_fg():
 
         acc = float(acc) / total
         return acc
+    
+    def get_OTCE(self):
+            
+        return OTCE(self.data_s, self.data)
+
 
 
 
 if __name__ == '__main__':
+    import time
+
     DATA_PATH = "/home/viki/Codes/MultiSource/2/multi-source/data_set_2/"
     MODEL_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/formula_test/weight/"
     SAVE_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/formula_test/results/"
     N_TASK = 21
+    
 
-    acc = np.zeros((N_TASK,3))
-    for i in range(N_TASK):
-        cal = vanilla_fg(DATA_PATH, MODEL_PATH,i)
-        
-        g_r, g, g_hat = cal.get_g()
-        rand = cal.get_accuracy(gc=g_r)
-        org = cal.get_accuracy(gc=g)
-        hat = cal.get_accuracy(gc=g_hat)
-        print("-------------task_id:{:d}-------------".format(i))
-        print("random:{:.1%}\noriginal:{:.1%}\ncalculated:{:.1%}\n".format(rand, org, hat))
-        acc[i] = rand, org, hat
+    # check device
+    if not torch.cuda.is_available():
+        raise Warning('Cuda unavailable. Now running on CPU.')
 
-    np.savetxt(SAVE_PATH+'vanilla_acc_table_'+time.strftime("%m%d", time.localtime())+'.npy', acc)
-        
+
+    alpha = 0.4
+    for t_id in range(21):
+
+        acc = np.zeros((N_TASK,3))
+        print("\n===========================================task_id:{:d}==============================================".format(t_id))
+        for id in range(21):
+            cal = single_fg(DATA_PATH, MODEL_PATH, t_id=t_id, s_id=id, alpha=alpha)
+            
+            # g = cal.s_tr_g_train()
+            g_r, g_hat = cal.s_tr_g_cal()
+            rand = cal.get_accuracy(gc=g_r)
+            org = cal.get_accuracy_with_f()
+            hat = cal.get_accuracy(gc=g_hat)
+            print("\n-------------source_task_id:{:d}-------------".format(id))
+            print("random:{:.1%}\noriginal:{:.1%}\ncalculated:{:.1%}\n".format(rand, org, hat))
+            acc[id] = rand, org, hat
+            print("-------------end-------------")
+            cal.OTCE()
+            break
+
+        np.savetxt(SAVE_PATH+'single_acc_table_'+time.strftime("%m%d", time.localtime())+'_alpha='+str(alpha)+'_t='+str(t_id)+'.npy', acc)

@@ -77,7 +77,7 @@ def load_model(path=None, id=0, t=1):
     '''
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(device)
+    # print(device)
 
     model_f = Net_f().to(device)
     model_g = Net_g().to(device)

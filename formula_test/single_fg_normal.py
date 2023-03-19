@@ -1,3 +1,9 @@
+'''
+training of source models
+with normalization layer in feature extractor
+'''
+
+
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
