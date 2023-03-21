@@ -1,3 +1,5 @@
+
+
 # calculate optimized g with fixed f
 # calculate h score
 
@@ -10,6 +12,7 @@ from matplotlib import pyplot as plt
 from torch.utils.data import Dataset,DataLoader,TensorDataset
 import loading
 from fixed_f_vanilla import vanilla_fg
+from OTCE import OTCE
 
 
 class single_fg(vanilla_fg):
@@ -23,8 +26,11 @@ class single_fg(vanilla_fg):
         super(single_fg, self).__init__(data_path=data_path, model_path=model_path, t_id=t_id, batch_size=batch_size)   
         self.data_s = loading.load_data(path = data_path, id = s_id)
 
-        self.model_f_tr = self.model_f.load_state_dict(torch.load(model_path+'f_task_t='+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth', map_location=self.device))
-        self.model_g_tr = self.model_g.load_state_dict(torch.load(model_path+'f_task_t='+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth'+'.pth', map_location=self.device))
+        self.model_f_tr, self.model_g_tr = loading.load_model()
+        self.model_f_tr.load_state_dict(torch.load(model_path+'f_task_t='+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth', map_location=self.device))
+        self.model_g_tr.load_state_dict(torch.load(model_path+'g_task_t='+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth', map_location=self.device))
+        self.model_f_tr.eval()
+        self.model_g_tr.eval()
 
         self.alpha = alpha
 
@@ -33,7 +39,7 @@ class single_fg(vanilla_fg):
         
         _, labels = next(iter(self.data))
         labels_one_hot = torch.zeros(len(labels), self.n_label).scatter_(1, labels.view(-1,1), 1)
-        # f = self.model_f_tr(Variable(images).to(self.device)).cpu().detach().numpy()
+
         g = self.model_g_tr(Variable(labels_one_hot).to(self.device)).cpu().detach().numpy()
         
 
@@ -72,6 +78,33 @@ class single_fg(vanilla_fg):
         g_rand = np.random.random(g_y_hat.shape)
 
         return g_rand, g_y_hat
+    
+    def get_accuracy_with_f(self):
+        gc = self.s_tr_g_train()
+        acc = 0
+        total = 0
+
+        for images, labels in self.test_data:
+
+            labels= labels.numpy()
+            fc=self.model_f_tr(Variable(images).to(self.device)).data.cpu().numpy()
+            f_mean=np.sum(fc,axis=0)/fc.shape[0]
+            fcp=fc-f_mean
+            
+            gce=np.sum(gc,axis=0)/self.n_label
+            gcp=gc-gce
+            fgp=np.dot(fcp,gcp.T)
+            acc += (np.argmax(fgp, axis = 1) == labels).sum()
+            # print(np.where(np.argmax(fgp, axis = 1) != labels))
+            total += len(images)
+
+        acc = float(acc) / total
+        return acc
+    
+    def get_OTCE(self):
+            
+        return OTCE(self.data_s, self.data)
+
 
 
 
@@ -79,26 +112,34 @@ if __name__ == '__main__':
     import time
 
     DATA_PATH = "/home/viki/Codes/MultiSource/2/multi-source/data_set_2/"
-    MODEL_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/formula_test/weight/"
-    SAVE_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/formula_test/results/"
+    MODEL_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/weight/"
+    SAVE_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/results/"
     N_TASK = 21
-    alpha = 0.4
+    
 
+    # check device
+    if not torch.cuda.is_available():
+        raise Warning('Cuda unavailable. Now running on CPU.')
+
+
+    alpha = 0.4
     for t_id in range(21):
 
         acc = np.zeros((N_TASK,3))
-        
+        print("\n===========================================task_id:{:d}==============================================".format(t_id))
         for id in range(21):
             cal = single_fg(DATA_PATH, MODEL_PATH, t_id=t_id, s_id=id, alpha=alpha)
             
-            g = cal.s_tr_g_train()
+            # g = cal.s_tr_g_train()
             g_r, g_hat = cal.s_tr_g_cal()
             rand = cal.get_accuracy(gc=g_r)
-            org = cal.get_accuracy(gc=g)
+            org = cal.get_accuracy_with_f()
             hat = cal.get_accuracy(gc=g_hat)
-            print("-------------source_task_id:{:d}-------------".format(id))
+            print("\n-------------source_task_id:{:d}-------------".format(id))
             print("random:{:.1%}\noriginal:{:.1%}\ncalculated:{:.1%}\n".format(rand, org, hat))
             acc[id] = rand, org, hat
             print("-------------end-------------")
+            cal.OTCE()
+            break
 
         np.savetxt(SAVE_PATH+'single_acc_table_'+time.strftime("%m%d", time.localtime())+'_alpha='+str(alpha)+'_t='+str(t_id)+'.npy', acc)
