@@ -23,8 +23,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(device)
 
 DATA_PATH = "/home/viki/Codes/MultiSource/2/multi-source/data_set_2/"
-MODEL_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/formula_test/weight/"
-SAVE_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/formula_test/results/"
+MODEL_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/weight/"
+SAVE_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/results/"
 N_TASK = 21
 
 class Net_f(nn.Module):
