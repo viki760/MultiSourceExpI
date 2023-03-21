@@ -21,10 +21,14 @@ class vanilla_fg():
         self.test_data = self.load(id=t_id, batch_size=batch_size, t=1)
         self.model_f, self.model_g = loading.load_model(path = model_path, id = t_id)
         self.n_label= int(next(iter(self.data))[1].max()+1)
+
+
     def load(self, id, batch_size = None, t=0):
         
         data = loading.load_data(path = self.data_path, id=id, batch_size=batch_size, t=t)
         return data
+
+        
     # estimate the distribution of labels using given data samples
     def get_distribution_y(self, data_y):
         '''

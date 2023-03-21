@@ -123,6 +123,7 @@ if __name__ == '__main__':
 
 
     alpha = 0.4
+    mylog = open(SAVE_PATH+'otce.txt', mode = 'a',encoding='utf-8')
     for t_id in range(21):
 
         acc = np.zeros((N_TASK,3))
@@ -140,6 +141,8 @@ if __name__ == '__main__':
             acc[id] = rand, org, hat
             print("-------------end-------------")
             W, ce = cal.get_OTCE()
-            
+            print(W,' ',ce, file=mylog)
 
+        
+        mylog.close()
         np.savetxt(SAVE_PATH+'single_acc_table_'+time.strftime("%m%d", time.localtime())+'_alpha='+str(alpha)+'_t='+str(t_id)+'.npy', acc)
