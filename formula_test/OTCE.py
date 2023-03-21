@@ -50,10 +50,10 @@ def OTCE(data_s, data):
     tar_x, tar_y = next(iter(data))
     
     # obtain the optimal coupling matrix P and the wasserstein distance W
-    P,W = compute_coupling(src_x, tar_x)
+    P,W = compute_coupling(src_x.reshape([len(src_x), -1]), tar_x.reshape([len(tar_x), -1]))
 
     # compute the conditonal entropy (ce)
-    ce = compute_CE(P, src_y, tar_y)
+    ce = compute_CE(P, np.array(src_y), np.array(tar_y))
     print ('Wasserstein distance:%.4f, Conditonal Entropy: %.4f'%(W,ce))
 
     return W, ce

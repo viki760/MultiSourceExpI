@@ -102,7 +102,7 @@ class single_fg(vanilla_fg):
         return acc
     
     def get_OTCE(self):
-            
+        # n_dim = self.data.shape
         return OTCE(self.data_s, self.data)
 
 
@@ -139,7 +139,7 @@ if __name__ == '__main__':
             print("random:{:.1%}\noriginal:{:.1%}\ncalculated:{:.1%}\n".format(rand, org, hat))
             acc[id] = rand, org, hat
             print("-------------end-------------")
-            cal.OTCE()
-            break
+            W, ce = cal.get_OTCE()
+            
 
         np.savetxt(SAVE_PATH+'single_acc_table_'+time.strftime("%m%d", time.localtime())+'_alpha='+str(alpha)+'_t='+str(t_id)+'.npy', acc)
