@@ -10,6 +10,10 @@ import torch
 from torch.autograd import Variable
 
 class alpha_vanilla():
+    '''
+    Original version of calculating alpha via convex optimization
+    '''
+
     def __init__(self, task_list, model_path, data_path) -> None:
         '''
         task_list is the list of task ids where the first id is the target / the others are the sources
@@ -33,7 +37,7 @@ class alpha_vanilla():
         
 
         for id in list:
-            model_f_i,_ = loading.load_model(id)
+            model_f_i, _ = loading.load_model(id)
             data_i = loading.load_data(id)
             images_i, _ = next(iter(data_i))
             f = model_f_i(Variable(images_i).to(self.device)).cpu().detach().numpy()
@@ -54,5 +58,6 @@ class alpha_vanilla():
         constraint = [np.ones([1,self.dim]) @ alphav == 1., np.eye(self.dim) @ alphav >= np.zeros(self.dim)]
         prob = cvx.Problem(obj, constraint)
         prob.solve() 
+
         return alphav.value
 
