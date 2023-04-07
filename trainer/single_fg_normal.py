@@ -1,6 +1,5 @@
 '''
-training of source models
-with normalization layer in feature extractor
+Single source transfer using finetuning based on source models from train_s_normal
 '''
 
 
@@ -22,9 +21,10 @@ import sys
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(device)
 
+PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/"
 DATA_PATH = "/home/viki/Codes/MultiSource/2/multi-source/data_set_2/"
-MODEL_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/weight/"
-SAVE_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/results/"
+MODEL_PATH = PATH + "formula_test/weight/"
+SAVE_PATH = PATH + "formula_test/results/"
 N_TASK = 21
 
 class Net_f(nn.Module):
@@ -189,4 +189,4 @@ for id in range(N_TASK):
         torch.save(model_g.state_dict(), save_path_g)
 
 print(ACC_ALL)
-np.savetxt(SAVE_PATH+'acc_transfer.npy', ACC_ALL)
+np.savetxt(SAVE_PATH+'acc_transfer_'+time.strftime("%m%d", time.localtime())+'.npy', ACC_ALL)

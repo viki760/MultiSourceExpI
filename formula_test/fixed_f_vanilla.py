@@ -9,6 +9,10 @@ from matplotlib import pyplot as plt
 from torch.utils.data import Dataset,DataLoader,TensorDataset
 import time
 import loading
+
+def load():
+    pass
+
 class vanilla_fg():
     '''
     calculation with fixed feature extractor w/o transfer
@@ -28,7 +32,7 @@ class vanilla_fg():
         data = loading.load_data(path = self.data_path, id=id, batch_size=batch_size, t=t)
         return data
 
-        
+
     # estimate the distribution of labels using given data samples
     def get_distribution_y(self, data_y):
         '''

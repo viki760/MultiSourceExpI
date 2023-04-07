@@ -24,11 +24,10 @@ class single_fg(vanilla_fg):
     def __init__(self, data_path, model_path, t_id, batch_size=None, s_id=0, alpha = 0.4):
         
         super(single_fg, self).__init__(data_path=data_path, model_path=model_path, t_id=t_id, batch_size=batch_size)   
+        self.fg load= vanilla_fg.Model()
         self.data_s = loading.load_data(path = data_path, id = s_id)
 
-        self.model_f_tr, self.model_g_tr = loading.load_model()
-        self.model_f_tr.load_state_dict(torch.load(model_path+'f_task_t='+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth', map_location=self.device))
-        self.model_g_tr.load_state_dict(torch.load(model_path+'g_task_t='+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth', map_location=self.device))
+
         self.model_f_tr.eval()
         self.model_g_tr.eval()
 

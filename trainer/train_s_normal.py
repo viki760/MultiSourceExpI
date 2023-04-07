@@ -47,6 +47,7 @@ print(device)
 
 DATA_PATH = "/home/viki/Codes/MultiSource/2/multi-source/data_set_2/"
 # DATA_PATH = r"D:\task\research\codes\MultiSource\wsl\2\multi-source\data_set_2\\"
+PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/"
 N_TASK = 21
 
 class Net_f(nn.Module):
@@ -193,10 +194,11 @@ for id in range(N_TASK):
 
     print('Finished Training')
 
-    save_path_f = 'weight/f_task_n_'+str(id)+'.pth'
+    save_path_f = PATH + 'formula_test/weight/f_task_n_'+str(id)+'.pth'
     torch.save(model_f.state_dict(), save_path_f)
-    save_path_g = 'weight/g_task_n_'+str(id)+'.pth'
+    save_path_g = PATH + 'formula_test/weight/g_task_n_'+str(id)+'.pth'
     torch.save(model_g.state_dict(), save_path_g)
 
     
-np.savetxt('results/acc_n_0308.npy', acc_list)
+SAVE_PATH = PATH + 'formula_test/results/acc_n_'+time.strftime("%m%d", time.localtime())+'.npy' 
+np.savetxt(SAVE_PATH, acc_list)

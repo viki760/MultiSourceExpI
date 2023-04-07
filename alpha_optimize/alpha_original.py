@@ -8,6 +8,35 @@ from fixed_f_vanilla import vanilla_fg
 import sys
 sys.path.append(
     "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/")
+ 
+
+def load(type_, args):
+    if type_ == "single_fg":
+                self.model_f_tr, self.model_g_tr = loading.load_model()
+        # self.model_f_tr.load_state_dict(torch.load(model_path+'f_task_t='+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth', map_location=self.device))
+        self.model_f_tr.load_state_dict(torch.load(
+            f"{model_path}_f_task_t= {}+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth'", map_location=self.device
+            ))
+
+        self.model_g_tr.load_state_dict(torch.load(model_path+'g_task_t='+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth', map_location=self.device))
+    elif type_ == ""
+    
+
+ @dataclass
+class SimpleTypes:
+    num: int = 10
+    pi: float = 3.1415
+    is_awesome: bool = True
+    height: Height = Height.SHORT
+    description: str = "text"
+    data: bytes = b"bin_data"
+    path: pathlib.Path = pathlib.Path("hello.txt")
+
+args = SimpleTypes()
+
+args.path = xxx
+args["path"] = 
+
 
 
 class alpha_vanilla(single_fg):
@@ -58,8 +87,8 @@ class alpha_vanilla(single_fg):
 
         return ce_f_ft
 
-    def get_V(self, id):
-        f_id = self.f_list[id]
+    def get_V(args, id):
+        f_id = self.f_list[args.id]
         data_id = self.data_list[id]
         x_id, y_id = next(iter(data_id))
 
@@ -95,6 +124,18 @@ class alpha_vanilla(single_fg):
         self.f_list = self.load_source_feature()
         self.data_list = [loading.load_data(
             path=self.data_path, id=i, batch_size=None) for i in range(self.dim)]
+
+        torch.save(
+            {
+                "features": self.f_list,
+                "targets": 
+            }
+        )
+
+        data = torch.load()
+
+        data["features"]
+
 
         _, y_t = next(iter(self.data_list[0]))
         self.py_t = self.get_distribution_y(y_t)
