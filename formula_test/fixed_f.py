@@ -14,20 +14,47 @@ class fg():
     '''
     calculation with fixed feature extractor
     '''
-    def __init__(self, data_path, model_path, t_id=0, batch_size=None):
-        self.data_path = data_path
-        self.model_path = model_path
+    def __init__(self, cfg, t_id=0) -> None:
+
+        self.data_path = cfg.path.data
+        self.model_path = cfg.path.pwd+"formula_test/weight/"
+        self.save_path = cfg.path.pwd+"formula_test/results/"
+
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.data = self.load(id=t_id, batch_size=batch_size)
-        self.test_data = self.load(id=t_id, batch_size=batch_size, t=1)
-        self.model_f, self.model_g = loading.load_model(path = model_path, id = t_id)
-        self.n_label= int(next(iter(self.data))[1].max()+1)
+
+        self.batch_size = cfg.setting.batch_size
+        self.lr = cfg.setting.lr
+        self.num_epochs = cfg.setting.num_epochs
+
+        self.t_id = [t_id] if isinstance(t_id, int) else t_id
 
 
-    def load(self, id, batch_size = None, t=0):
+    def load(self, t=0) -> None:
+
+        self.test_data = self.load(id=self.t_id, batch_size=self.batch_size, t=1)
+        self.model_f, self.model_g = loading.load_model(path = self.model_path, id = self.t_id)
+        # self.n_label= int(next(iter(self.data))[1].max()+1)
+        self.n_label= (int(d[1].max()+1) for d in self.data)
+        self.data = self.load(id=self.t_id, batch_size=self.batch_size)
+        data = loading.load_data(path = self.data_path, id=id, batch_size=self.batch_size, t=t)
+
         
-        data = loading.load_data(path = self.data_path, id=id, batch_size=batch_size, t=t)
-        return data
+
+        res = {}
+        for i in range(10):
+        res[f"task{i}"] = {
+
+        }
+
+        torch.save(
+            {
+                "features": features,
+                "targets": targets,
+
+            }, "test.xxxxx.sfsdfsdfsdfs"
+        )
+            
+
 
 
     # estimate the distribution of labels using given data samples
@@ -55,7 +82,10 @@ class fg():
             ce_f[i] = fx_i.mean(axis=0)
         
         return ce_f
-        
+
+    def get_fg(self):
+        images, labels = next(iter(self.data))
+
     def get_g(self):
         images, labels = next(iter(self.data))
         # take the first batch as input data
@@ -96,14 +126,14 @@ class fg():
         return acc
 
 if __name__ == '__main__':
-    DATA_PATH = "/home/viki/Codes/MultiSource/2/multi-source/data_set_2/"
-    MODEL_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/weight/"
-    SAVE_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/results/"
+    # DATA_PATH = "/home/viki/Codes/MultiSource/2/multi-source/data_set_2/"
+    # MODEL_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/weight/"
+    # SAVE_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/results/"
     N_TASK = 21
 
     acc = np.zeros((N_TASK,3))
     for i in range(N_TASK):
-        cal = vanilla_fg(DATA_PATH, MODEL_PATH,i)
+        cal = fg(cfg=cfg, i)
         
         g_r, g, g_hat = cal.get_g()
         rand = cal.get_accuracy(gc=g_r)
