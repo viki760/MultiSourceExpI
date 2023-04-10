@@ -18,6 +18,7 @@ class fg():
 
         self.data_path = cfg.path.data
         self.model_path = cfg.path.pwd+"formula_test/weight/"
+        self.load_path = cfg.path.pwd+"formula_test/load/"
         self.save_path = cfg.path.pwd+"formula_test/results/"
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -29,32 +30,38 @@ class fg():
         self.t_id = [t_id] if isinstance(t_id, int) else t_id
 
 
-    def load(self, t=0) -> None:
+    def load(self, id, t=0) -> None:
 
-        self.test_data = self.load(id=self.t_id, batch_size=self.batch_size, t=1)
-        self.model_f, self.model_g = loading.load_model(path = self.model_path, id = self.t_id)
+        self.test_data = loading.load_data(path = self.data_path, id = id, batch_size = self.batch_size, t = t)
+        self.model_f, self.model_g = loading.load_model(path = self.model_path, id = id)
         # self.n_label= int(next(iter(self.data))[1].max()+1)
-        self.n_label= (int(d[1].max()+1) for d in self.data)
-        self.data = self.load(id=self.t_id, batch_size=self.batch_size)
-        data = loading.load_data(path = self.data_path, id=id, batch_size=self.batch_size, t=t)
-
+        self.n_label= (int(d[1].max()+1) for d in self.test_data)
+        # self.data = self.load(id=self.t_id, batch_size=self.batch_size)
         
 
-        res = {}
-        for i in range(10):
-        res[f"task{i}"] = {
-
-        }
+        self.images, self.labels = next(iter(self.test_data))
+        labels_one_hot = torch.zeros(len(self.labels), self.n_label).scatter_(1, self.labels.view(-1,1), 1)
+        self.f = self.model_f(Variable(self.images).to(self.device)).cpu().detach().numpy()
+        self.g = self.model_g(Variable(labels_one_hot).to(self.device)).cpu().detach().numpy()
 
         torch.save(
             {
-                "features": features,
-                "targets": targets,
-
-            }, "test.xxxxx.sfsdfsdfsdfs"
+                "id": id,
+                "x": self.images,
+                "y": self.labels,
+                "f": self.f,
+                "g": self.g,
+                "n_label":self.n_label,
+            }, f"{self.load_path}test{id}.pt"
         )
-            
 
+        # res = {}
+        # for i in range(10):
+        # res[f"task{i}"] = {}
+
+    def read_from_load(self, id) -> None:
+        data = torch.load(f"{self.load_path}test{id}.pt")
+        self.images, self.labels, self.f, self.g, self.n_label = data["x"], data["y"], data["f"], data["g"], data["n_label"]
 
 
     # estimate the distribution of labels using given data samples
@@ -83,28 +90,31 @@ class fg():
         
         return ce_f
 
-    def get_fg(self):
-        images, labels = next(iter(self.data))
-
-    def get_g(self):
-        images, labels = next(iter(self.data))
-        # take the first batch as input data
-        labels_one_hot = torch.zeros(len(labels), self.n_label).scatter_(1, labels.view(-1,1), 1)
-        f = self.model_f(Variable(images).to(self.device)).cpu().detach().numpy()
-        g = self.model_g(Variable(labels_one_hot).to(self.device)).cpu().detach().numpy()
-        # expectation and normalization of f and g
-        e_f = f.mean(0)
+    def normalize(self, f):
+        e_f = f.mean(axis=0)
         n_f = f - e_f
-        # e_g = g.mean(0)
-        # n_g = g - e_g
+        return n_f
+
+    def get_g(self, id):
+
+        try:
+            self.read_from_load(id)
+        except:
+            self.load(id)
+
+        # expectation and normalization of f and g
+        n_f = self.normalize(self.f)
+        # n_g = self.normalize(self.g)
+
         gamma_f = n_f.T.dot(n_f) / n_f.shape[0]
-        ce_f = self. get_conditional_exp(f, images, labels)
+        ce_f = self. get_conditional_exp(self.f, self.images, self.labels)
         g_y_hat = np.linalg.inv(gamma_f).dot(ce_f.T).T
         
-        g_y = np.array([g[torch.where(labels == i)][0] for i in range(labels.max()+1)])
+        g_y = np.array([self.g[torch.where(self.labels == i)][0] for i in range(self.labels.max()+1)])
         
         g_rand = np.random.random(g_y.shape)
         return g_rand, g_y, g_y_hat
+
     # classification accuracy with different gy
     def get_accuracy(self, gc):
         
@@ -129,17 +139,24 @@ if __name__ == '__main__':
     # DATA_PATH = "/home/viki/Codes/MultiSource/2/multi-source/data_set_2/"
     # MODEL_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/weight/"
     # SAVE_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/results/"
+    import hydra
+    from omegaconf import DictConfig
     N_TASK = 21
 
-    acc = np.zeros((N_TASK,3))
-    for i in range(N_TASK):
-        cal = fg(cfg=cfg, i)
+    @hydra.main(version_base=None, config_path="../conf", config_name="config")
+    def my_app(cfg : DictConfig) -> None:    
+        path = cfg.path.wd
+        cal = fg(cfg, 0)
+        cal.get_g(0)
+    # acc = np.zeros((N_TASK,3))
+    # for i in range(N_TASK):
+    #     cal = fg(cfg=cfg, i)
         
-        g_r, g, g_hat = cal.get_g()
-        rand = cal.get_accuracy(gc=g_r)
-        org = cal.get_accuracy(gc=g)
-        hat = cal.get_accuracy(gc=g_hat)
-        print("-------------task_id:{:d}-------------".format(i))
-        print("random:{:.1%}\noriginal:{:.1%}\ncalculated:{:.1%}\n".format(rand, org, hat))
-        acc[i] = rand, org, hat
-    np.savetxt(SAVE_PATH+'vanilla_acc_table_'+time.strftime("%m%d", time.localtime())+'.npy', acc)
+    #     g_r, g, g_hat = cal.get_g()
+    #     rand = cal.get_accuracy(gc=g_r)
+    #     org = cal.get_accuracy(gc=g)
+    #     hat = cal.get_accuracy(gc=g_hat)
+    #     print("-------------task_id:{:d}-------------".format(i))
+    #     print("random:{:.1%}\noriginal:{:.1%}\ncalculated:{:.1%}\n".format(rand, org, hat))
+    #     acc[i] = rand, org, hat
+    # np.savetxt(SAVE_PATH+'vanilla_acc_table_'+time.strftime("%m%d", time.localtime())+'.npy', acc)
