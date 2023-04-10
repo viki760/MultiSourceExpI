@@ -9,17 +9,20 @@ from matplotlib import pyplot as plt
 from torch.utils.data import Dataset,DataLoader,TensorDataset
 import time
 import loading
+import hydra
+from omegaconf import DictConfig
 
-class fg():
+class fg:
     '''
     calculation with fixed feature extractor
     '''
     def __init__(self, cfg, t_id=0) -> None:
 
         self.data_path = cfg.path.data
-        self.model_path = cfg.path.pwd+"formula_test/weight/"
-        self.load_path = cfg.path.pwd+"formula_test/load/"
-        self.save_path = cfg.path.pwd+"formula_test/results/"
+        self.model_path = cfg.path.wd+"formula_test/weight/"
+        self.load_path = cfg.path.wd+"formula_test/load/"
+        self.save_path = cfg.path.wd+"formula_test/results/"
+        self.log_path = cfg.path.wd+"formula_test/log/"
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -30,16 +33,17 @@ class fg():
         self.t_id = [t_id] if isinstance(t_id, int) else t_id
 
 
-    def load(self, id, t=0) -> None:
+    def load(self, id) -> None:
 
-        self.test_data = loading.load_data(path = self.data_path, id = id, batch_size = self.batch_size, t = t)
+        self.data = loading.load_data(path = self.data_path, id = id, batch_size = self.batch_size, t = 0)
+        self.test_data = loading.load_data(path = self.data_path, id = id, batch_size = self.batch_size, t = 1)
         self.model_f, self.model_g = loading.load_model(path = self.model_path, id = id)
-        # self.n_label= int(next(iter(self.data))[1].max()+1)
-        self.n_label= (int(d[1].max()+1) for d in self.test_data)
+        self.n_label= int(next(iter(self.data))[1].max()+1)
+        # self.n_label= [int(d[1].max()+1) for d in self.data][0]
         # self.data = self.load(id=self.t_id, batch_size=self.batch_size)
         
 
-        self.images, self.labels = next(iter(self.test_data))
+        self.images, self.labels = next(iter(self.data))
         labels_one_hot = torch.zeros(len(self.labels), self.n_label).scatter_(1, self.labels.view(-1,1), 1)
         self.f = self.model_f(Variable(self.images).to(self.device)).cpu().detach().numpy()
         self.g = self.model_g(Variable(labels_one_hot).to(self.device)).cpu().detach().numpy()
@@ -51,7 +55,8 @@ class fg():
                 "y": self.labels,
                 "f": self.f,
                 "g": self.g,
-                "n_label":self.n_label,
+                "n_label": self.n_label,
+                "test_data": self.test_data,
             }, f"{self.load_path}test{id}.pt"
         )
 
@@ -61,14 +66,12 @@ class fg():
 
     def read_from_load(self, id) -> None:
         data = torch.load(f"{self.load_path}test{id}.pt")
-        self.images, self.labels, self.f, self.g, self.n_label = data["x"], data["y"], data["f"], data["g"], data["n_label"]
+        self.images, self.labels, self.f, self.g, self.n_label, self.test_data = data["x"], data["y"], data["f"], data["g"], data["n_label"], data["test_data"]
 
 
     # estimate the distribution of labels using given data samples
     def get_distribution_y(self, data_y):
-        '''
-        calculate the distribution of labels given data_y
-        '''
+        "calculate the distribution of labels given data_y"
         px = np.zeros(self.n_label)
         for i in range(self.n_label):
             for j in data_y:
@@ -76,16 +79,17 @@ class fg():
                     px[i] += 1
         return px / data_y.size
     
-    # expectation of fx
+    
     def get_exp(self, fx):
+        "expectation of fx"
         return np.mean(fx, axis=1)
-    # conditional expectation of fx
-    def get_conditional_exp(self, fx, x, y):
-        # calculate conditional expectation of fx
-        ce_f = np.zeros((self.n_label, fx.shape[1]))
+    
+    def get_conditional_exp(self):
+        "calculate conditional expectation of fx"
+        ce_f = np.zeros((self.n_label, self.f.shape[1]))
         for i in range(self.n_label):
-            x_i = x[np.where(y==i)]
-            fx_i = self.model_f(Variable(x_i).to(self.device)).cpu().detach().numpy() - fx.mean(0)
+            x_i = self.images[np.where(self.labels==i)]
+            fx_i = self.model_f(Variable(x_i).to(self.device)).cpu().detach().numpy() - self.f.mean(0)
             ce_f[i] = fx_i.mean(axis=0)
         
         return ce_f
@@ -99,6 +103,7 @@ class fg():
 
         try:
             self.read_from_load(id)
+            self.model_f, self.model_g = loading.load_model(path = self.model_path, id = id)
         except:
             self.load(id)
 
@@ -107,17 +112,18 @@ class fg():
         # n_g = self.normalize(self.g)
 
         gamma_f = n_f.T.dot(n_f) / n_f.shape[0]
-        ce_f = self. get_conditional_exp(self.f, self.images, self.labels)
+        ce_f = self. get_conditional_exp()
         g_y_hat = np.linalg.inv(gamma_f).dot(ce_f.T).T
         
-        g_y = np.array([self.g[torch.where(self.labels == i)][0] for i in range(self.labels.max()+1)])
+        g_y = np.array([self.g[torch.where(self.labels == i)][0] for i in range(self.n_label)])
         
         g_rand = np.random.random(g_y.shape)
+
         return g_rand, g_y, g_y_hat
 
-    # classification accuracy with different gy
+    
     def get_accuracy(self, gc):
-        
+        "classification accuracy with different gy"
         acc = 0
         total = 0
         for images, labels in self.test_data:
@@ -135,19 +141,55 @@ class fg():
         acc = float(acc) / total
         return acc
 
+    def acc(self):
+        acc_all = {}
+        for id in self.t_id:
+            acc = [self.get_accuracy(g) for g in self.get_g(id)]
+            acc_list = {
+                "g_rand": acc[0],
+                "g_net": acc[1],
+                "g_cal": acc[2],
+            }
+            acc_all[id] = acc_list     
+        return acc_all
+    
+    def logging(self):
+        # logging
+        pass
+
+    def save(self, obj, filename:str) -> None:
+        '''
+        save object as file with given filename
+        only npy files supported
+        '''
+        try:
+            np.save(f"{self.save_path}{filename}.npy", obj)
+        except:
+            raise TypeError("unexpected object type")
+
+
 if __name__ == '__main__':
+
     # DATA_PATH = "/home/viki/Codes/MultiSource/2/multi-source/data_set_2/"
     # MODEL_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/weight/"
     # SAVE_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/results/"
-    import hydra
-    from omegaconf import DictConfig
+    
+    import time
     N_TASK = 21
+    TASK_LIST = 0
 
     @hydra.main(version_base=None, config_path="../conf", config_name="config")
-    def my_app(cfg : DictConfig) -> None:    
-        path = cfg.path.wd
-        cal = fg(cfg, 0)
-        cal.get_g(0)
+    def run(cfg : DictConfig)->None:    
+        cal = fg(cfg, TASK_LIST)
+        acc = cal.acc()
+        cal.save(acc, "accuracy_dict_"+time.strftime("%m%d", time.localtime()))
+        
+
+    # np.load("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/results/accuracy_dict_0410.npy", allow_pickle=True).item()
+    # cfg = yaml.load(open("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/conf/config.yaml","r"), Loader = yaml.Loader)
+    run()
+    
+
     # acc = np.zeros((N_TASK,3))
     # for i in range(N_TASK):
     #     cal = fg(cfg=cfg, i)
