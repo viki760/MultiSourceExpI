@@ -153,8 +153,9 @@ def empirical_fg_transfer(t_id, s_id, alpha, batch_size=10, num_epochs=20, lr=0.
 
             acc = float(acc) / total
 
-            print(f'Single transfer using fg net\nTarget:{t_id}\tSource:{s_id}\nTest Accuracy of the model on the 1000 test images: {100 * acc} %')
+            print(f'{100 * acc} %')
 
+    print(f'Single transfer using fg net\nTarget:{t_id}\tSource:{s_id}\nTest Accuracy of the model on the 1000 test images:{100 * acc} %')
     return acc
 
 

@@ -62,8 +62,11 @@ class transfer_fg(fg):
         self.s_y_list =[task["y"] for _, task in self.source_data.items()]
         
 
-    def empirical_transfer(self, t_id, s_id):
-        return empirical_fg_transfer(t_id, s_id, self.alpha[0], self.batch_size, self.num_epochs, self.lr)
+    def empirical_transfer(self, t_id):
+        acc_list = []
+        for s_id in self.s_ids:
+            acc_list.append(empirical_fg_transfer(t_id, s_id, self.alpha[0], self.batch_size, self.num_epochs, self.lr))
+        return acc_list
 
     def get_g(self):
         
@@ -112,7 +115,7 @@ class transfer_fg(fg):
         # n_dim = self.data.shape
         return np.array([OTCE(self.s_x_list[i], self.s_y_list[i], self.images, self.labels) for i in range(self.n_source)]) 
 
-    def acc(self):
+    def acc(self, empirical = False):
         "output accuracy dict for all g and target tasks"
         acc_all = {}
         for id in self.t_id:
@@ -121,9 +124,13 @@ class transfer_fg(fg):
             otce = self.get_OTCE()
             acc_list = {
                 "g_rand": acc[0],
-                "g_net": acc[1],
+                "g_cal": acc[1],
+                # "empirical": acc_empirical,
                 "otce": otce,
             }
+            if empirical == True:
+                acc_empirical = self.empirical_transfer(id)
+                acc_list["empirical"] = acc_empirical
             acc_all[id] = acc_list     
         return acc_all
 
@@ -150,7 +157,7 @@ if __name__ == '__main__':
         for s in TASK_LIST: 
             cal = transfer_fg(cfg, t_ids=TASK_LIST, s_ids=s, alpha=alpha)
 
-            acc = cal.acc()
+            acc = cal.acc(empirical=False)
             # json.dumps(acc, indent=4, sort_keys=True)
             print(acc)
             cal.save(acc, f"accuracy_dict_source={s}_")
