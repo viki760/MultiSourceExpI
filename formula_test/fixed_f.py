@@ -11,6 +11,9 @@ import time
 import loading
 import hydra
 from omegaconf import DictConfig
+import time
+import os
+# from tqdm import tqdm
 
 class fg:
     '''
@@ -99,7 +102,7 @@ class fg:
         n_f = f - e_f
         return n_f
 
-    def get_g(self, id):
+    def load_for_id(self, id):
 
         try:
             self.read_from_load(id)
@@ -107,19 +110,14 @@ class fg:
         except:
             self.load(id)
 
-        # expectation and normalization of f and g
-        n_f = self.normalize(self.f)
-        # n_g = self.normalize(self.g)
+    def get_g(self):
 
-        gamma_f = n_f.T.dot(n_f) / n_f.shape[0]
-        ce_f = self. get_conditional_exp()
-        g_y_hat = np.linalg.inv(gamma_f).dot(ce_f.T).T
         
         g_y = np.array([self.g[torch.where(self.labels == i)][0] for i in range(self.n_label)])
         
         g_rand = np.random.random(g_y.shape)
 
-        return g_rand, g_y, g_y_hat
+        return g_rand, g_y
 
     
     def get_accuracy(self, gc):
@@ -144,11 +142,11 @@ class fg:
     def acc(self):
         acc_all = {}
         for id in self.t_id:
-            acc = [self.get_accuracy(g) for g in self.get_g(id)]
+            self.load_for_id(id)
+            acc = [self.get_accuracy(g) for g in self.get_g()]
             acc_list = {
                 "g_rand": acc[0],
                 "g_net": acc[1],
-                "g_cal": acc[2],
             }
             acc_all[id] = acc_list     
         return acc_all
@@ -163,7 +161,7 @@ class fg:
         only npy files supported
         '''
         try:
-            np.save(f"{self.save_path}{filename}.npy", obj)
+            np.save(f"{self.save_path}{os.path.basename(__file__).strip('.py')}_{filename}_{time.strftime('%m%d', time.localtime())}.npy", obj)
         except:
             raise TypeError("unexpected object type")
 
@@ -174,16 +172,18 @@ if __name__ == '__main__':
     # MODEL_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/weight/"
     # SAVE_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/results/"
     
-    import time
+
     N_TASK = 21
-    TASK_LIST = 0
+    TASK_LIST = range(N_TASK)
 
     @hydra.main(version_base=None, config_path="../conf", config_name="config")
     def run(cfg : DictConfig)->None:    
         cal = fg(cfg, TASK_LIST)
         acc = cal.acc()
-        cal.save(acc, "accuracy_dict_"+time.strftime("%m%d", time.localtime()))
-        
+        print(acc)
+        cal.save(acc, "accuracy_dict")
+
+
 
     # np.load("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/results/accuracy_dict_0410.npy", allow_pickle=True).item()
     # cfg = yaml.load(open("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/conf/config.yaml","r"), Loader = yaml.Loader)
