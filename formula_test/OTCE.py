@@ -44,10 +44,10 @@ def compute_CE(P, Y_src, Y_tar):
                 ce += -(P_src_tar[y1,y2] * math.log(P_src_tar[y1,y2] / P_y1))
     return ce
 
-def OTCE(data_s, data):
+def OTCE(src_x, src_y, tar_x, tar_y):
             
-    src_x, src_y = next(iter(data_s))
-    tar_x, tar_y = next(iter(data))
+    # src_x, src_y = next(iter(data_s))
+    # tar_x, tar_y = next(iter(data))
     
     # obtain the optimal coupling matrix P and the wasserstein distance W
     P,W = compute_coupling(src_x.reshape([len(src_x), -1]), tar_x.reshape([len(tar_x), -1]))

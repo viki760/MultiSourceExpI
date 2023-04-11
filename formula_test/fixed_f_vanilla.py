@@ -51,6 +51,22 @@ class vanilla_fg(fg):
         return acc_all
 
 if __name__ == '__main__':
+
+    import hydra 
+    from omegaconf import DictConfig
+
+    N_TASK = 21
+    TASK_LIST = range(N_TASK)
+
+    @hydra.main(version_base=None, config_path="../conf", config_name="config")
+    def run(cfg : DictConfig)->None:    
+        cal = vanilla_fg(cfg, TASK_LIST)
+        acc = cal.acc()
+        print(acc)
+        cal.save(acc, "accuracy_dict")
+    
+    run()
+
     # DATA_PATH = "/home/viki/Codes/MultiSource/2/multi-source/data_set_2/"
     # MODEL_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/weight/"
     # SAVE_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/results/"
@@ -68,19 +84,5 @@ if __name__ == '__main__':
     #     print("random:{:.1%}\noriginal:{:.1%}\ncalculated:{:.1%}\n".format(rand, org, hat))
     #     acc[i] = rand, org, hat
     # np.savetxt(SAVE_PATH+'vanilla_acc_table_'+time.strftime("%m%d", time.localtime())+'.npy', acc)
-    import hydra 
-    from omegaconf import DictConfig
-
-    N_TASK = 21
-    TASK_LIST = range(N_TASK)
-
-    @hydra.main(version_base=None, config_path="../conf", config_name="config")
-    def run(cfg : DictConfig)->None:    
-        cal = vanilla_fg(cfg, TASK_LIST)
-        acc = cal.acc()
-        print(acc)
-        cal.save(acc, "accuracy_dict")
-    
-    run()
     
         

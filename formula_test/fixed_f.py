@@ -13,6 +13,8 @@ import hydra
 from omegaconf import DictConfig
 import time
 import os
+import sys
+import json
 # from tqdm import tqdm
 
 class fg:
@@ -28,6 +30,8 @@ class fg:
         self.log_path = cfg.path.wd+"formula_test/log/"
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if not torch.cuda.is_available():
+            raise Warning('Cuda unavailable. Now running on CPU.')
 
         self.batch_size = cfg.setting.batch_size
         self.lr = cfg.setting.lr
@@ -87,12 +91,15 @@ class fg:
         "expectation of fx"
         return np.mean(fx, axis=1)
     
-    def get_conditional_exp(self):
+    def get_conditional_exp(self, x=None, y=None, f=None):
         "calculate conditional expectation of fx"
-        ce_f = np.zeros((self.n_label, self.f.shape[1]))
+        if x is None:
+            x, y, f = self.images, self.labels, self.f
+
+        ce_f = np.zeros((self.n_label, f.shape[1]))
         for i in range(self.n_label):
-            x_i = self.images[np.where(self.labels==i)]
-            fx_i = self.model_f(Variable(x_i).to(self.device)).cpu().detach().numpy() - self.f.mean(0)
+            x_i = x[np.where(y==i)]
+            fx_i = self.model_f(Variable(x_i).to(self.device)).cpu().detach().numpy() - f.mean(0)
             ce_f[i] = fx_i.mean(axis=0)
         
         return ce_f
@@ -140,6 +147,7 @@ class fg:
         return acc
 
     def acc(self):
+        "output accuracy dict for all g and target tasks"
         acc_all = {}
         for id in self.t_id:
             self.load_for_id(id)
@@ -161,7 +169,7 @@ class fg:
         only npy files supported
         '''
         try:
-            np.save(f"{self.save_path}{os.path.basename(__file__).strip('.py')}_{filename}_{time.strftime('%m%d', time.localtime())}.npy", obj)
+            np.save(f"{self.save_path}{os.path.basename(sys.argv[0]).strip('.py')}_{filename}_{time.strftime('%m%d', time.localtime())}.npy", obj)
         except:
             raise TypeError("unexpected object type")
 
@@ -180,16 +188,16 @@ if __name__ == '__main__':
     def run(cfg : DictConfig)->None:    
         cal = fg(cfg, TASK_LIST)
         acc = cal.acc()
-        print(acc)
+        json.dumps(acc, indent=4, sort_keys=True)
         cal.save(acc, "accuracy_dict")
 
 
+    run()
+
 
     # np.load("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/results/accuracy_dict_0410.npy", allow_pickle=True).item()
-    # cfg = yaml.load(open("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/conf/config.yaml","r"), Loader = yaml.Loader)
-    run()
-    
-
+    # cfg = yaml.load(open("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/conf/config.yaml","r"), Loader = yaml.Loader)  
+ 
     # acc = np.zeros((N_TASK,3))
     # for i in range(N_TASK):
     #     cal = fg(cfg=cfg, i)
