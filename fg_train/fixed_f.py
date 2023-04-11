@@ -24,10 +24,10 @@ class fg:
     def __init__(self, cfg, t_id=0) -> None:
 
         self.data_path = cfg.path.data
-        self.model_path = cfg.path.wd+"formula_test/weight/"
-        self.load_path = cfg.path.wd+"formula_test/load/"
-        self.save_path = cfg.path.wd+"formula_test/results/"
-        self.log_path = cfg.path.wd+"formula_test/log/"
+        self.model_path = cfg.path.wd+"fg_train/weight/"
+        self.load_path = cfg.path.wd+"fg_train/load/"
+        self.save_path = cfg.path.wd+"fg_train/results/"
+        self.log_path = cfg.path.wd+"fg_train/log/"
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if not torch.cuda.is_available():
@@ -177,8 +177,8 @@ class fg:
 if __name__ == '__main__':
 
     # DATA_PATH = "/home/viki/Codes/MultiSource/2/multi-source/data_set_2/"
-    # MODEL_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/weight/"
-    # SAVE_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/results/"
+    # MODEL_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/fg_train/weight/"
+    # SAVE_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/fg_train/results/"
     
 
     N_TASK = 21
@@ -188,14 +188,15 @@ if __name__ == '__main__':
     def run(cfg : DictConfig)->None:    
         cal = fg(cfg, TASK_LIST)
         acc = cal.acc()
-        json.dumps(acc, indent=4, sort_keys=True)
+        # json.dumps(acc, indent=4, sort_keys=True)
+        print(acc)
         cal.save(acc, "accuracy_dict")
 
 
     run()
 
 
-    # np.load("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/results/accuracy_dict_0410.npy", allow_pickle=True).item()
+    # np.load("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/fg_train/results/accuracy_dict_0410.npy", allow_pickle=True).item()
     # cfg = yaml.load(open("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/conf/config.yaml","r"), Loader = yaml.Loader)  
  
     # acc = np.zeros((N_TASK,3))

@@ -14,6 +14,10 @@ import loading
 from fixed_f import fg
 from OTCE import OTCE
 import json
+import sys
+sys.path.append("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp")
+
+from trainer.single_fg_normal import empirical_fg_transfer
 
 
 class transfer_fg(fg):
@@ -28,7 +32,12 @@ class transfer_fg(fg):
 
         self.s_ids = [s_ids] if isinstance(s_ids, int) else s_ids
 
-        self.alpha = np.array(alpha) if isinstance(alpha, int) else alpha
+        self.alpha = np.array([alpha]) if isinstance(alpha, float) else alpha
+
+        if len(self.s_ids)!=self.alpha.size:
+            raise ValueError("length of alpha weights does not match number of sources.")
+        else:
+            self.n_source = len(self.s_ids)
 
 
     # def load_source(self, id):
@@ -47,19 +56,18 @@ class transfer_fg(fg):
         for s_id in self.s_ids:
             self.source_data[s_id] = torch.load(f"{self.load_path}test{s_id}.pt")
 
-        self.s_f_list = np.cat([task["f"] for _, task in self.source_data.items()])
-        self.s_g_list = torch.cat([task["g"] for _, task in self.source_data.items()])
-        self.s_x_list = torch.cat([task["x"] for _, task in self.source_data.items()])
-        self.s_y_list = torch.cat([task["y"] for _, task in self.source_data.items()])
+        self.s_f_list = np.array([task["f"] for _, task in self.source_data.items()])
+        self.s_g_list = np.array([task["g"] for _, task in self.source_data.items()])
+        self.s_x_list = [task["x"] for _, task in self.source_data.items()]
+        self.s_y_list =[task["y"] for _, task in self.source_data.items()]
         
 
-
-    
     def empirical_transfer(self, t_id, s_id):
-        pass 
+        return empirical_fg_transfer(t_id, s_id, self.alpha[0], self.batch_size, self.num_epochs, self.lr)
 
     def get_g(self):
-
+        
+        
         # g = (1-alpha) * g + alpha * g_s
 
         # expectation and normalization of f and g
@@ -70,9 +78,9 @@ class transfer_fg(fg):
 
         ce_f = self. get_conditional_exp()
         
-        ce_f_s = np.array([self.get_conditional_exp(self.s_x_list[s_id], self.s_y_list[s_id], self.s_f_list[s_id]) for s_id in self.s_ids])
+        ce_f_s = np.array([self.get_conditional_exp(self.s_x_list[i], self.s_y_list[i], self.s_f_list[i]) for i in range(self.n_source)])
 
-        g_y_hat = np.linalg.inv(gamma_f).dot(((1-np.sum(self.alpha)) * ce_f + self.alpha.dot(ce_f_s)).T).T        
+        g_y_hat = np.linalg.inv(gamma_f).dot(((1-np.sum(self.alpha)) * ce_f + ce_f_s.transpose(1,2,0).dot(self.alpha)).T).T        
         
         g_rand = np.random.random(g_y_hat.shape)
 
@@ -102,13 +110,13 @@ class transfer_fg(fg):
     
     def get_OTCE(self):
         # n_dim = self.data.shape
-        return np.array([OTCE(self.s_x_list[s_id], self.s_y_list[s_id], self.images, self.labels) for s_id in self.s_ids]) 
+        return np.array([OTCE(self.s_x_list[i], self.s_y_list[i], self.images, self.labels) for i in range(self.n_source)]) 
 
     def acc(self):
         "output accuracy dict for all g and target tasks"
         acc_all = {}
         for id in self.t_id:
-            self.load_for_id(id)
+            self.load_for_id_with_source(id)
             acc = [self.get_accuracy(g) for g in self.get_g()]
             otce = self.get_OTCE()
             acc_list = {
@@ -138,14 +146,16 @@ if __name__ == '__main__':
     alpha = 0.4
 
     @hydra.main(version_base=None, config_path="../conf", config_name="config")
-    def run(cfg : DictConfig)->None:  
-        cal = transfer_fg(cfg, t_id=0, s_id=1, alpha=alpha)
+    def run(cfg : DictConfig)->None: 
+        for s in TASK_LIST: 
+            cal = transfer_fg(cfg, t_ids=TASK_LIST, s_ids=s, alpha=alpha)
 
-        acc = cal.acc()
-        json.dumps(acc, indent=4, sort_keys=True)
-        cal.save(acc, "accuracy_dict")
-        # print(W,' ',ce, file=mylog)
+            acc = cal.acc()
+            # json.dumps(acc, indent=4, sort_keys=True)
+            print(acc)
+            cal.save(acc, f"accuracy_dict_source={s}_")
+            # print(W,' ',ce, file=mylog)
 
-    
+    run()
     # mylog.close()
     # np.savetxt(SAVE_PATH+'single_acc_table_'+time.strftime("%m%d", time.localtime())+'_alpha='+str(alpha)+'_t='+str(t_id)+'.npy', acc)
