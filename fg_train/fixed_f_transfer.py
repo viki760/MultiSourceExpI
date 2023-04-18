@@ -10,14 +10,14 @@ from torch.autograd import Variable
 import numpy as np
 from matplotlib import pyplot as plt
 from torch.utils.data import Dataset,DataLoader,TensorDataset
-import loading
 from fixed_f import fg
 from OTCE import OTCE
 import json
 import sys
 sys.path.append("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp")
-
+import trainer.loading as loading
 from trainer.single_fg_normal import empirical_fg_transfer
+from trainer.fg_finetune import fg_finetune
 
 
 class transfer_fg(fg):
@@ -60,7 +60,13 @@ class transfer_fg(fg):
         self.s_g_list = np.array([task["g"] for _, task in self.source_data.items()])
         self.s_x_list = [task["x"] for _, task in self.source_data.items()]
         self.s_y_list =[task["y"] for _, task in self.source_data.items()]
-        
+    
+    def finetune(self, t_id, train_f):
+        acc_list = []
+        for s_id in self.s_ids:
+            acc_list.append(fg_finetune(t_id, s_id, train_f = train_f, batch_size = self.batch_size, num_epochs = 10, lr = self.lr))
+
+        return acc_list
 
     def empirical_transfer(self, t_id):
         acc_list = []
@@ -115,7 +121,7 @@ class transfer_fg(fg):
         # n_dim = self.data.shape
         return np.array([OTCE(self.s_x_list[i], self.s_y_list[i], self.images, self.labels) for i in range(self.n_source)]) 
 
-    def acc(self, empirical = False):
+    def acc(self, empirical = False, finetune = False, f_train = False):
         "output accuracy dict for all g and target tasks"
         acc_all = {}
         for id in self.t_id:
@@ -131,6 +137,10 @@ class transfer_fg(fg):
             if empirical == True:
                 acc_empirical = self.empirical_transfer(id)
                 acc_list["empirical"] = acc_empirical
+            if finetune == True:
+                acc_finetune = self.finetune(id, f_train)
+                acc_list["finetune"] = acc_finetune
+            
             acc_all[id] = acc_list     
         return acc_all
 
@@ -144,7 +154,6 @@ if __name__ == '__main__':
     # DATA_PATH = "/home/viki/Codes/MultiSource/2/multi-source/data_set_2/"
     # MODEL_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/weight/"
     # SAVE_PATH = "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/results/"
-
     # mylog = open(SAVE_PATH+'otce.txt', mode = 'a',encoding='utf-8')
 
     N_TASK = 21
@@ -157,7 +166,7 @@ if __name__ == '__main__':
         for s in TASK_LIST: 
             cal = transfer_fg(cfg, t_ids=TASK_LIST, s_ids=s, alpha=alpha)
 
-            acc = cal.acc(empirical=False)
+            acc = cal.acc(empirical=False, finetune = True)
             # json.dumps(acc, indent=4, sort_keys=True)
             print(acc)
             cal.save(acc, f"accuracy_dict_source={s}_")

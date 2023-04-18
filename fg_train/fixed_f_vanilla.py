@@ -8,8 +8,11 @@ import numpy as np
 from matplotlib import pyplot as plt
 from torch.utils.data import Dataset,DataLoader,TensorDataset
 import time
-import loading
+import sys
+sys.path.append("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp")
+import trainer.loading as loading
 from fixed_f import fg
+
 
 def load():
     pass

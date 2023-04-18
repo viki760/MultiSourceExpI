@@ -1,5 +1,5 @@
 
-import loading
+import trainer.loading as loading
 import fixed_f_vanilla as vf
 import display
 
