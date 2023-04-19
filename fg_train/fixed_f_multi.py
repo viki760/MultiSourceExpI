@@ -16,9 +16,19 @@ from fg_train.fixed_f_transfer import transfer_fg
 class multi_fg(transfer_fg):
     def __init__(self, cfg, t_ids, s_ids, alpha):
         super(multi_fg, self).__init__(cfg = cfg, t_ids=t_ids, s_ids=s_ids, alpha=alpha)
+        self.alpha_given = alpha
+        self.alpha_rand = self.rand_alpha()
 
+    def empirical(self):
+        pass
+
+    def finetune(self):
+        pass
     
-    def get_g(self):
+    def get_g(self, alpha_type=None):
+
+        
+
         # expectation and normalization of f and g
         n_f = self.normalize(self.f)
         # n_g = self.normalize(self.g)
@@ -34,3 +44,41 @@ class multi_fg(transfer_fg):
         g_rand = np.random.random(g_y_hat.shape)
 
         return g_rand, g_y_hat
+    
+
+    def grid_alpha(self):
+        pass
+
+    def optimize_alpha(self):
+        pass
+
+    def rand_alpha(self):
+        a = np.random.random(self.n_source + 1)
+        a /= a.sum()
+        return a[1:]
+    
+
+
+
+if __name__ == '__main__':
+    import time
+    import hydra
+    from omegaconf import DictConfig
+
+    N_TASK = 21
+    TASK_LIST = range(N_TASK)
+
+    s_l = [i for i in range(1, N_TASK)]
+    alpha = np.ones(20) / 40
+    
+
+    @hydra.main(version_base=None, config_path="../conf", config_name="config")
+    def run(cfg : DictConfig)->None: 
+        
+        cal = multi_fg(cfg, t_ids=0, s_ids=s_l, alpha=alpha)
+
+        acc = cal.acc(empirical=False, finetune = False)
+        print(acc)
+        cal.save(acc, f"accuracy_dict_source={s_l}_")
+
+    run()
