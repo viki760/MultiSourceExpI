@@ -1,7 +1,7 @@
 
-import trainer.loading as loading
+import fg_train.util.loading as loading
 import fixed_f_vanilla as vf
-import display
+import fg_train.util.display as display
 
 
 import hydra

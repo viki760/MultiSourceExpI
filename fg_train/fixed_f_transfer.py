@@ -15,7 +15,7 @@ from OTCE import OTCE
 import json
 import sys
 sys.path.append("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp")
-import trainer.loading as loading
+import fg_train.util.loading as loading
 from trainer.single_fg_normal import empirical_fg_transfer
 from trainer.fg_finetune import fg_finetune
 

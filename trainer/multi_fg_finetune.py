@@ -3,7 +3,7 @@ empirical transferability given by finetuning from source
 using fg net scheme
 '''
 
-import trainer.loading as loading
+import fg_train.util.loading as loading
 import torch.nn as nn
 import torch.nn.functional as F
 import torch

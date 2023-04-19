@@ -18,7 +18,7 @@ from torch.utils.data import Dataset,DataLoader,TensorDataset
 from torch.autograd import Variable
 import sys
 sys.path.append("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp")
-import trainer.loading as loading
+import fg_train.util.loading as loading
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
