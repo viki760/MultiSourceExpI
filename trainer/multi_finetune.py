@@ -2,7 +2,6 @@
 empirical transferability given by finetuning from source
 using fg net scheme
 
-copyright: modified by Ter 2023
 '''
 
 import sys
@@ -97,12 +96,16 @@ def load_data(id, batch_size=100, t=0):
     return data
 
 
-def fg_finetune_multi(t_id, s_id_list, train_f=True, batch_size=12, num_epochs=15, lr=3e-5):
+def fg_finetune_multi(t_id, s_id_list, train_f=True, batch_size=10, num_epochs=10, lr=0.0001):
 
     train_loader = load_data(t_id, batch_size, 0)
     test_loader = load_data(t_id, batch_size, 1)
 
     model_multi = loading.load_multi_model(MODEL_PATH, s_id_list, t=0)
+
+    # param_list = []
+    # for g in model_multi.g_model_list:
+    #     param_list.append(g.parameters())
 
     optimizer_fg = torch.optim.Adam(model_multi.g_model_list.parameters(), lr=lr)
 
@@ -147,8 +150,6 @@ def fg_finetune_multi(t_id, s_id_list, train_f=True, batch_size=12, num_epochs=1
                 print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}' .format(
                     epoch+1, num_epochs, i+1, total_step, loss.item()))
             # print(loss.grad)
-        print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}' .format(
-            epoch+1, num_epochs, i+1, total_step, loss.item()))
 
         # Test the model
         model_multi.eval()
@@ -182,7 +183,7 @@ def fg_finetune_multi(t_id, s_id_list, train_f=True, batch_size=12, num_epochs=1
 
 
 if __name__ == '__main__':
-    # NetMulti= loading.load_multi_model(MODEL_PATH, [0, 1], t=1)
-    fg_finetune_multi(t_id=0, s_id_list=[1,2], train_f=False)
+    NetMulti= loading.load_multi_model(MODEL_PATH, [0, 1], t=1)
+    fg_finetune_multi(t_id=0, s_id_list=[1,2])
                                        
 

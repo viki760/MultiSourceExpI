@@ -10,7 +10,7 @@ from OTCE import OTCE
 import json
 import sys
 sys.path.append("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp")
-import fg_train.util.loading as loading
+import util.loading as loading
 from fg_train.fixed_f_transfer import transfer_fg
 
 class multi_fg(transfer_fg):
