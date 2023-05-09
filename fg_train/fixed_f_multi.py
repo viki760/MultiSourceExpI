@@ -5,29 +5,34 @@ from torch.autograd import Variable
 import numpy as np
 from matplotlib import pyplot as plt
 from torch.utils.data import Dataset,DataLoader,TensorDataset
-from fixed_f import fg
-from OTCE import OTCE
 import json
 import sys
 sys.path.append("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp")
 import util.loading as loading
 from fg_train.fixed_f_transfer import transfer_fg
+# from fg_train.fixed_f import fg
+# from metrics.OTCE import OTCE
+from metrics.H_score import Hscore
 
 class multi_fg(transfer_fg):
     def __init__(self, cfg, t_ids, s_ids, alpha):
         super(multi_fg, self).__init__(cfg = cfg, t_ids=t_ids, s_ids=s_ids, alpha=alpha)
-        self.alpha_given = alpha
-        self.alpha_rand = self.rand_alpha()
+        # self.alpha_given = alpha
+        
 
     def empirical(self):
         pass
 
     def finetune(self):
         pass
-    
-    def get_g(self, alpha_type=None):
 
-        
+    def get_Hscore_multi(self, t_id):
+        return Hscore(id_t = t_id, id_s = self.s_ids, alpha = self.alpha, include_target = True)
+    
+    def get_g(self, alpha_type='given'):
+
+        if alpha_type == 'rand':
+            self.alpha = self.rand_alpha()
 
         # expectation and normalization of f and g
         n_f = self.normalize(self.f)
