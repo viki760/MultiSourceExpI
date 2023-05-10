@@ -19,6 +19,9 @@ def minimize_f(f, alpha, lr=0.001, epsilon = 0.0001, num_iters = 1000):
             a_minus[j] -= epsilon
             grad[j] = (f(a_plus)-f(a_minus))/(2*epsilon)
         alpha += lr*grad
+        alpha[alpha < 0] = 0
+        alpha = alpha / alpha.sum() if alpha.sum() > 1 else alpha
+        print(alpha)
         score[i] = f(alpha)
 
     return alpha, score
