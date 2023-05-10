@@ -10,7 +10,7 @@ from torch.autograd import Variable
 import numpy as np
 from matplotlib import pyplot as plt
 from torch.utils.data import Dataset,DataLoader,TensorDataset
-from fixed_f import fg
+
 import json
 import sys
 sys.path.append("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp")
@@ -19,6 +19,7 @@ from trainer.single_fg_normal import empirical_fg_transfer
 from trainer.fg_finetune import fg_finetune
 from metrics.OTCE import OTCE
 from metrics.H_score import Hscore
+from fg_train.fixed_f import fg
 
 
 class transfer_fg(fg):
