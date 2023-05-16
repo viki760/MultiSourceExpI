@@ -8,35 +8,34 @@ from fixed_f_vanilla import vanilla_fg
 import sys
 sys.path.append(
     "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/")
- 
 
-def load(type_, args):
-    if type_ == "single_fg":
-                self.model_f_tr, self.model_g_tr = loading.load_model()
-        # self.model_f_tr.load_state_dict(torch.load(model_path+'f_task_t='+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth', map_location=self.device))
-        self.model_f_tr.load_state_dict(torch.load(
-            f"{model_path}_f_task_t= {}+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth'", map_location=self.device
-            ))
 
-        self.model_g_tr.load_state_dict(torch.load(model_path+'g_task_t='+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth', map_location=self.device))
-    elif type_ == ""
-    
+# def load(type_, args):
+#     if type_ == "single_fg":
+#                 self.model_f_tr, self.model_g_tr = loading.load_model()
+#         # self.model_f_tr.load_state_dict(torch.load(model_path+'f_task_t='+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth', map_location=self.device))
+#         self.model_f_tr.load_state_dict(torch.load(
+#             f"{model_path}_f_task_t= {}+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth'", map_location=self.device
+#             ))
 
- @dataclass
-class SimpleTypes:
-    num: int = 10
-    pi: float = 3.1415
-    is_awesome: bool = True
-    height: Height = Height.SHORT
-    description: str = "text"
-    data: bytes = b"bin_data"
-    path: pathlib.Path = pathlib.Path("hello.txt")
+#         self.model_g_tr.load_state_dict(torch.load(model_path+'g_task_t='+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth', map_location=self.device))
+#     elif type_ == ""
 
-args = SimpleTypes()
 
-args.path = xxx
-args["path"] = 
+# @dataclass
+# class SimpleTypes:
+#     num: int = 10
+#     pi: float = 3.1415
+#     is_awesome: bool = True
+#     height: Height = Height.SHORT
+#     description: str = "text"
+#     data: bytes = b"bin_data"
+#     path: pathlib.Path = pathlib.Path("hello.txt")
 
+# args = SimpleTypes()
+
+# args.path = xxx
+# args["path"] =
 
 
 class alpha_vanilla(single_fg):
@@ -128,14 +127,12 @@ class alpha_vanilla(single_fg):
         torch.save(
             {
                 "features": self.f_list,
-                "targets": 
-            }
+                "targets":}
         )
 
         data = torch.load()
 
         data["features"]
-
 
         _, y_t = next(iter(self.data_list[0]))
         self.py_t = self.get_distribution_y(y_t)
