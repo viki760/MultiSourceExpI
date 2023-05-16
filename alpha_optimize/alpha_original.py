@@ -2,13 +2,15 @@ from torch.autograd import Variable
 import torch
 import numpy as np
 import cvxpy as cvx
-import loading
-from fixed_f_single import single_fg
-from fixed_f_vanilla import vanilla_fg
-import sys
+
 sys.path.append(
     "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/")
  
+import util.loading as loading
+from fg_train.fixed_f_transfer import transfer_fg
+from fg_train.fixed_f import fg
+import sys
+
 
 def load(type_, args):
     if type_ == "single_fg":
@@ -22,7 +24,7 @@ def load(type_, args):
     elif type_ == ""
     
 
- @dataclass
+@dataclass
 class SimpleTypes:
     num: int = 10
     pi: float = 3.1415

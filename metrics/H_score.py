@@ -57,16 +57,30 @@ def getDiffNNCov(f, inverse, Z):
     dif = np.trace(np.dot(inverse, Covg))
     return dif
 
+def get_transfer_feature(id_t, id_s, for_optim=False):
+    
+    data = loading.load_data(path = DATA_PATH, id = id_t, batch_size = 15, t = 0)
+    images, labels = next(iter(data))
+    f = []
+    for i in range(len(id_s)):
+        model_f, _ = loading.load_model(path = MODEL_PATH, id = id_s[i])
+        f_i = model_f(images.to(device)).cpu().detach().numpy()
+        f.append(f_i)
+    features = np.array(f)
+    # feature = f.sum(axis = 0)
+    if for_optim == True:
+        pass
+    return labels, features
 
-def Hscore(id_t, id_s, alpha=1.0, include_target=False):
+def Hscore(id_t, id_s, alpha=1.0, include_target=False, for_optim=False):
     '''
     given target and source list, return h score
     alpha: feature weights (should be an array)
     include_target: whether to insert target feature extractor in linear combination
+    for_optim: if true, store features in 
     '''
     
-    data = loading.load_data(path = DATA_PATH, id = id_t, batch_size = 15, t = 0)
-    images, labels = next(iter(data))
+    
     # data_test = loading.load_data(path = data_path, id = id_t, batch_size = 100, t = 1)
 
     # in case of single transferability
@@ -79,18 +93,14 @@ def Hscore(id_t, id_s, alpha=1.0, include_target=False):
     else:
         alpha = alpha / alpha.sum()
 
-    f = []
-    for i in range(len(id_s)):
-        model_f, _ = loading.load_model(path = MODEL_PATH, id = id_s[i])
-        f_i = alpha[i] * model_f(images.to(device)).cpu().detach().numpy()
-        f.append(f_i)
-    f = np.array(f)
-    feature = f.sum(axis = 0)
+    label, feature = get_transfer_feature(id_t, id_s)
+
+    feature = np.array([alpha[i]* feature[i] for i in range(len(alpha))]).sum(axis=0)
 
     Covf = getCov(feature)
     inverse = np.linalg.pinv(Covf, rcond=1e-15)
 
-    hscore = getDiffNNCov(feature, inverse, labels.cpu().detach().numpy())
+    hscore = getDiffNNCov(feature, inverse, label.cpu().detach().numpy())
     gc.collect()
 
     return hscore
