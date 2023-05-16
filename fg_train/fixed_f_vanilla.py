@@ -10,7 +10,7 @@ from torch.utils.data import Dataset,DataLoader,TensorDataset
 import time
 import sys
 sys.path.append("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp")
-import trainer.loading as loading
+import util.loading as loading
 from fixed_f import fg
 
 

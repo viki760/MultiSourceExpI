@@ -1,9 +1,14 @@
 '''
 empirical transferability given by finetuning from source
 using fg net scheme
+
+copyright: modified by Ter 2023
 '''
 
-import trainer.loading as loading
+import sys
+sys.path.append(
+    "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp")
+import util.loading as loading
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
@@ -17,9 +22,7 @@ import numpy as np
 import time
 from torch.utils.data import Dataset, DataLoader, TensorDataset
 from torch.autograd import Variable
-import sys
-sys.path.append(
-    "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp")
+
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -94,17 +97,14 @@ def load_data(id, batch_size=100, t=0):
     return data
 
 
-def fg_finetune(t_id, s_id, train_f=True, batch_size=10, num_epochs=10, lr=0.0001):
+def fg_finetune_multi(t_id, s_id_list, train_f=True, batch_size=12, num_epochs=15, lr=3e-5):
 
     train_loader = load_data(t_id, batch_size, 0)
     test_loader = load_data(t_id, batch_size, 1)
 
-    model_f, model_g = loading.load_model(MODEL_PATH, s_id, t=0)
+    model_multi = loading.load_multi_model(MODEL_PATH, s_id_list, t=0)
 
-    # Loss and optimizer
-    # criterion = nn.CrossEntropyLoss()
-    optimizer_fg = torch.optim.Adam(
-        list(model_f.parameters())+list(model_g.parameters()), lr=lr)
+    optimizer_fg = torch.optim.Adam(model_multi.g_model_list.parameters(), lr=lr)
 
     # Train the model
     total_step = len(train_loader)
@@ -114,17 +114,16 @@ def fg_finetune(t_id, s_id, train_f=True, batch_size=10, num_epochs=10, lr=0.000
         for i, (images, labels) in enumerate(train_loader):
 
             if train_f == True:
-                model_f.train()
+                model_multi.f_model_list.train()
             else:
-                model_f.eval()
+                model_multi.f_model_list.eval()
 
-            model_g.train()
+            model_multi.g_model_list.train()
             labels_one_hot = torch.zeros(
                 len(labels), 2).scatter_(1, labels.view(-1, 1), 1)
             # Forward pass
             optimizer_fg.zero_grad()
-            f = model_f(Variable(images).to(device))
-            g = model_g(Variable(labels_one_hot).to(device))
+            f, g = model_multi(images.to(device), labels_one_hot.to(device))
 
             # Backward and optimize
             # loss = (-2)*corr(f,g)
@@ -148,10 +147,12 @@ def fg_finetune(t_id, s_id, train_f=True, batch_size=10, num_epochs=10, lr=0.000
                 print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}' .format(
                     epoch+1, num_epochs, i+1, total_step, loss.item()))
             # print(loss.grad)
+        print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}' .format(
+            epoch+1, num_epochs, i+1, total_step, loss.item()))
 
         # Test the model
-        model_f.eval()
-        model_g.eval()  # eval mode (batchnorm uses moving mean/variance instead of mini-batch mean/variance)
+        model_multi.eval()
+          # eval mode (batchnorm uses moving mean/variance instead of mini-batch mean/variance)
         with torch.no_grad():
             acc = 0
             total = 0
@@ -159,12 +160,13 @@ def fg_finetune(t_id, s_id, train_f=True, batch_size=10, num_epochs=10, lr=0.000
             for images, labels in test_loader:
 
                 labels = labels.numpy()
-                fc = model_f(Variable(images).to(device)).data.cpu().numpy()
+                labellist = torch.Tensor([[1, 0], [0, 1]])
+                fc, gc = model_multi(images.to(device), labellist.to(device))
+                fc, gc = fc.data.cpu().numpy(), gc.data.cpu().numpy()
                 f_mean = np.sum(fc, axis=0)/fc.shape[0]
                 fcp = fc-f_mean
 
-                labellist = torch.Tensor([[1, 0], [0, 1]])
-                gc = model_g(Variable(labellist).to(device)).data.cpu().numpy()
+                
                 gce = np.sum(gc, axis=0)/gc.shape[0]
                 gcp = gc-gce
                 fgp = np.dot(fcp, gcp.T)
@@ -180,4 +182,7 @@ def fg_finetune(t_id, s_id, train_f=True, batch_size=10, num_epochs=10, lr=0.000
 
 
 if __name__ == '__main__':
-    pass
+    # NetMulti= loading.load_multi_model(MODEL_PATH, [0, 1], t=1)
+    fg_finetune_multi(t_id=0, s_id_list=[1,2], train_f=False)
+                                       
+

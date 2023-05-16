@@ -105,3 +105,31 @@ def load_model(path=None, id=0, t=1):
         model_g.eval()
 
     return model_f, model_g
+<<<<<<< HEAD:trainer/loading.py
+=======
+
+def load_multi_model(path=None, id_list=0, t=1):
+
+    res = [load_model(path=path, id=i, t=t) for i in id_list]
+    
+    class Net_multiple(nn.Module):
+        def __init__(self, model_list):
+            super(Net_multiple, self).__init__()
+
+            # ((1, 2), (5, 6), (10, 11))
+            # ->
+            #  [(1, 5, 10), (2, 6, 11)]
+            tmp = zip(*model_list)
+            self.f_model_list, self.g_model_list = [nn.ModuleList(x) for x in tmp]
+
+        def forward(self, x, y):
+            feat_f_list = [f(x) for f in self.f_model_list]
+            feat_g_list = [g(y) for g in self.g_model_list]
+
+            # out = (torch.cat(feat_f_list, dim=1), torch.cat(feat_g_list, dim=1))  # (bs, n * dim)
+
+            out = (torch.stack(feat_f_list, dim=1).mean(dim=1), torch.stack(feat_g_list, dim=1).mean(dim=1))
+
+            return out   
+    return Net_multiple(res)
+>>>>>>> 67b392c694c85590dafbe2367ffe27850d652a04:util/loading.py

@@ -10,14 +10,16 @@ from torch.autograd import Variable
 import numpy as np
 from matplotlib import pyplot as plt
 from torch.utils.data import Dataset,DataLoader,TensorDataset
-from fixed_f import fg
-from OTCE import OTCE
+
 import json
 import sys
 sys.path.append("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp")
-import trainer.loading as loading
+import util.loading as loading
 from trainer.single_fg_normal import empirical_fg_transfer
 from trainer.fg_finetune import fg_finetune
+from metrics.OTCE import OTCE
+from metrics.H_score import Hscore
+from fg_train.fixed_f import fg
 
 
 class transfer_fg(fg):
@@ -120,6 +122,9 @@ class transfer_fg(fg):
     def get_OTCE(self):
         # n_dim = self.data.shape
         return np.array([OTCE(self.s_x_list[i], self.s_y_list[i], self.images, self.labels) for i in range(self.n_source)]) 
+    
+    def get_Hscore(self, t_id):
+        return np.array([Hscore(t_id, s_id) for s_id in self.s_ids]) 
 
     def acc(self, empirical = False, finetune = False, f_train = False):
         "output accuracy dict for all g and target tasks"
@@ -127,12 +132,13 @@ class transfer_fg(fg):
         for id in self.t_id:
             self.load_for_id_with_source(id)
             acc = [self.get_accuracy(g) for g in self.get_g()]
-            otce = self.get_OTCE()
+            otce, hscore = self.get_OTCE(), self.get_Hscore(id)
             acc_list = {
                 "g_rand": acc[0],
                 "g_cal": acc[1],
                 # "empirical": acc_empirical,
                 "otce": otce,
+                "hscore": hscore,
             }
             if empirical == True:
                 acc_empirical = self.empirical_transfer(id)
@@ -164,7 +170,7 @@ if __name__ == '__main__':
     @hydra.main(version_base=None, config_path="../conf", config_name="config")
     def run(cfg : DictConfig)->None: 
         for s in TASK_LIST: 
-            cal = transfer_fg(cfg, t_ids=TASK_LIST, s_ids=s, alpha=alpha)
+            cal = transfer_fg(cfg, t_ids=0, s_ids=s, alpha=alpha)
 
             acc = cal.acc(empirical=False, finetune = True)
             # json.dumps(acc, indent=4, sort_keys=True)
