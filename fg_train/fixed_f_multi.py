@@ -6,6 +6,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from torch.utils.data import Dataset,DataLoader,TensorDataset
 import json
+import os
 import sys
 sys.path.append("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp")
 import util.loading as loading
@@ -17,6 +18,7 @@ from metrics.H_score import Hscore
 class multi_fg(transfer_fg):
     def __init__(self, cfg, t_ids, s_ids, alpha):
         super(multi_fg, self).__init__(cfg = cfg, t_ids=t_ids, s_ids=s_ids, alpha=alpha)
+        self.alpha_path = cfg.path.wd+"alpha/"
         # self.alpha_given = alpha
         
 
@@ -57,6 +59,15 @@ class multi_fg(transfer_fg):
     def optimize_alpha(self):
         pass
 
+    def validate_alpha(self):
+        for filename in os.listdir(self.alpha_path):
+            if 'alpha.npy' in filename:
+                self.alpha = np.loadtxt(os.path.join(self.alpha_path, filename))
+                # self.alpha = np.insert(self.alpha, 0, 1-self.alpha.sum())
+                _, g_hat = self.get_g()
+                print(filename[:-4]+":\t"+str(self.get_accuracy(g_hat)))
+        
+
     def rand_alpha(self):
         a = np.random.random(self.n_source + 1)
         a /= a.sum()
@@ -73,8 +84,8 @@ if __name__ == '__main__':
     N_TASK = 21
     TASK_LIST = range(N_TASK)
 
-    s_l = [i for i in range(1, N_TASK)]
-    alpha = np.ones(20) / 40
+    s_l = list(range(1, N_TASK))
+    alpha = np.ones(20) / 21
     
 
     @hydra.main(version_base=None, config_path="../conf", config_name="config")
@@ -85,5 +96,7 @@ if __name__ == '__main__':
         acc = cal.acc(empirical=False, finetune = False)
         print(acc)
         cal.save(acc, f"accuracy_dict_source={s_l}_")
+        cal.validate_alpha()
+    
 
     run()

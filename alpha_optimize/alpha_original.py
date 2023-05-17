@@ -5,15 +5,12 @@ import cvxpy as cvx
 
 sys.path.append(
     "/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/formula_test/")
-<<<<<<< HEAD
-=======
  
 import util.loading as loading
 from fg_train.fixed_f_transfer import transfer_fg
 from fg_train.fixed_f import fg
 import sys
 
->>>>>>> 67b392c694c85590dafbe2367ffe27850d652a04
 
 
 # def load(type_, args):
@@ -24,10 +21,6 @@ import sys
 #             f"{model_path}_f_task_t= {}+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth'", map_location=self.device
 #             ))
 
-<<<<<<< HEAD
-#         self.model_g_tr.load_state_dict(torch.load(model_path+'g_task_t='+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth', map_location=self.device))
-#     elif type_ == ""
-=======
 @dataclass
 class SimpleTypes:
     num: int = 10
@@ -37,7 +30,6 @@ class SimpleTypes:
     description: str = "text"
     data: bytes = b"bin_data"
     path: pathlib.Path = pathlib.Path("hello.txt")
->>>>>>> 67b392c694c85590dafbe2367ffe27850d652a04
 
 
 # @dataclass

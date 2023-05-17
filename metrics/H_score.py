@@ -59,6 +59,9 @@ def getDiffNNCov(f, inverse, Z):
 
 def get_transfer_feature(id_t, id_s, for_optim=False):
     
+    #! only for with target
+    if for_optim == True:
+        id_s.append(id_t)
     data = loading.load_data(path = DATA_PATH, id = id_t, batch_size = 15, t = 0)
     images, labels = next(iter(data))
     f = []
@@ -67,12 +70,12 @@ def get_transfer_feature(id_t, id_s, for_optim=False):
         f_i = model_f(images.to(device)).cpu().detach().numpy()
         f.append(f_i)
     features = np.array(f)
-    # feature = f.sum(axis = 0)
-    if for_optim == True:
-        pass
+    # # feature = f.sum(axis = 0)
+
+        
     return labels, features
 
-def Hscore(id_t, id_s, alpha=1.0, include_target=False, for_optim=False):
+def Hscore(id_t, id_s, alpha=1.0, include_target=False, for_optim=False, features=None, labels=None):
     '''
     given target and source list, return h score
     alpha: feature weights (should be an array)
@@ -93,14 +96,15 @@ def Hscore(id_t, id_s, alpha=1.0, include_target=False, for_optim=False):
     else:
         alpha = alpha / alpha.sum()
 
-    label, feature = get_transfer_feature(id_t, id_s)
+    if for_optim == False:
+        labels, features = get_transfer_feature(id_t, id_s)
 
-    feature = np.array([alpha[i]* feature[i] for i in range(len(alpha))]).sum(axis=0)
+    feature = np.array([alpha[i]* features[i] for i in range(len(alpha))]).sum(axis=0)
 
     Covf = getCov(feature)
     inverse = np.linalg.pinv(Covf, rcond=1e-15)
 
-    hscore = getDiffNNCov(feature, inverse, label.cpu().detach().numpy())
+    hscore = getDiffNNCov(feature, inverse, labels.cpu().detach().numpy())
     gc.collect()
 
     return hscore

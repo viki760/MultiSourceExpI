@@ -51,6 +51,8 @@ def load_data(path, batch_size=None, id=0, t=0, istarget=False, shots=10):
     batch_size  default:200
     task_id    range(21); default:0
     t          0(train)/1(test); default:train
+    istarget    True for target; False for source
+    shots   if istarget, set sample number of few shot
     '''
     if t == 0:
         x = torch.from_numpy(np.load(
@@ -105,8 +107,7 @@ def load_model(path=None, id=0, t=1):
         model_g.eval()
 
     return model_f, model_g
-<<<<<<< HEAD:trainer/loading.py
-=======
+
 
 def load_multi_model(path=None, id_list=0, t=1):
 
@@ -132,4 +133,4 @@ def load_multi_model(path=None, id_list=0, t=1):
 
             return out   
     return Net_multiple(res)
->>>>>>> 67b392c694c85590dafbe2367ffe27850d652a04:util/loading.py
+
