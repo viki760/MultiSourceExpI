@@ -10,7 +10,7 @@ from fg_train.fixed_f_transfer import transfer_fg
 from metrics.H_score import Hscore, get_transfer_feature
 
 
-def minimize_f(f, alpha, lr=0.001, epsilon = 0.0001, num_iters = 100):
+def maximize_f(f, alpha, lr=0.001, epsilon = 0.0001, num_iters = 100):
     score = np.zeros(num_iters)
     for i in tqdm(range(num_iters)):
         grad = np.zeros_like(alpha)
@@ -33,7 +33,7 @@ def update_alpha(t_id, s_id, lr, include_target=True):
     alpha = np.ones(n_s_tasks) / (n_s_tasks + 1)
     label, feature = get_transfer_feature(t_id, s_id, for_optim=True)
     f = lambda a: Hscore(id_t = t_id, id_s = copy.deepcopy(s_id), alpha = a, include_target = include_target, for_optim=True, features=feature, labels=label)
-    alpha_opt, score_curve = minimize_f(f, alpha, lr=lr)
+    alpha_opt, score_curve = maximize_f(f, alpha, lr=lr)
     return alpha_opt, score_curve
 
 if __name__ == '__main__':

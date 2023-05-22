@@ -21,17 +21,6 @@ import sys
 #             f"{model_path}_f_task_t= {}+str(t_id)+'_s='+str(s_id)+'_alpha='+str(alpha)+'.pth'", map_location=self.device
 #             ))
 
-@dataclass
-class SimpleTypes:
-    num: int = 10
-    pi: float = 3.1415
-    is_awesome: bool = True
-    height: Height = Height.SHORT
-    description: str = "text"
-    data: bytes = b"bin_data"
-    path: pathlib.Path = pathlib.Path("hello.txt")
-
-
 # @dataclass
 # class SimpleTypes:
 #     num: int = 10
@@ -48,7 +37,7 @@ class SimpleTypes:
 # args["path"] =
 
 
-class alpha_vanilla(single_fg):
+class alpha_vanilla(transfer_fg):
     '''
     Original version of calculating alpha via convex optimization
     '''
@@ -96,7 +85,7 @@ class alpha_vanilla(single_fg):
 
         return ce_f_ft
 
-    def get_V(args, id):
+    def get_V(self, args, id):
         f_id = self.f_list[args.id]
         data_id = self.data_list[id]
         x_id, y_id = next(iter(data_id))
@@ -134,11 +123,11 @@ class alpha_vanilla(single_fg):
         self.data_list = [loading.load_data(
             path=self.data_path, id=i, batch_size=None) for i in range(self.dim)]
 
-        torch.save(
-            {
-                "features": self.f_list,
-                "targets":}
-        )
+        # torch.save(
+        #     {
+        #         "features": self.f_list,
+        #         "targets":}
+        # )
 
         data = torch.load()
 
