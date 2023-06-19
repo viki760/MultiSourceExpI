@@ -1,7 +1,8 @@
-
-import fg_train.util.loading as loading
+import sys
+sys.path.append("/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp")
+import util.loading as loading
 import fixed_f_vanilla as vf
-import fg_train.util.display as display
+import util.display as display
 
 
 import hydra
