@@ -28,7 +28,7 @@ def make_task(i, j, iscoarse = False, istest = False):
     x = np.load(SAVE_PATH + 'x_'+key+'.npy')
 
     label = np.where(label==i, -1, 0) + np.where(label==j, 1, 0)
-    print(np.where(label!=0))
+    # print(np.where(label!=0))
     x_tr, y_tr = x[np.where(label != 0)], label[np.where(label != 0)]
     return x_tr, np.array(y_tr > 0, dtype = int)
 
@@ -110,6 +110,7 @@ if __name__ == "__main__":
     # 19 bear, rocket
     # 20 bear, cloud
 
+    #* **** define the num of shot & pair setting here ****
     make(pair, dir = 'data_set_1')
 
 
