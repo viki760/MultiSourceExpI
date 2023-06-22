@@ -9,6 +9,6 @@
 # *.ipynb
 ace*
 
-data/
+# data/
 # results/
 weight/

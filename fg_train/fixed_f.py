@@ -18,6 +18,36 @@ import os
 import json
 # from tqdm import tqdm
 
+
+class Net_f(nn.Module):
+    def __init__(self):
+        super(Net_f, self).__init__()
+        googlenet = torch.hub.load('pytorch/vision:v0.6.0', 'googlenet', pretrained=True)
+        self.feature=torch.nn.Sequential(*list(googlenet.children())[0:18])
+        self.fc1 = nn.Linear(1024,32)
+        self.fc2 = nn.Linear(32,10)
+        self.BN = nn.BatchNorm1d(10)
+
+    def forward(self,x):
+        out=self.feature(x)
+        out=out.view(-1,1024)
+        out=F.relu(self.fc1(out))
+        out=self.fc2(out)
+        out=self.BN(out)
+
+        return out     
+
+class Net_g(nn.Module):
+    def __init__(self,num_class=2, dim=10):
+        super(Net_g, self).__init__()
+
+        self.fc=nn.Linear(num_class, dim)
+
+    def forward(self,x):
+        out=self.fc(x)
+
+        return out
+
 class fg:
     '''
     calculation with fixed feature extractor
