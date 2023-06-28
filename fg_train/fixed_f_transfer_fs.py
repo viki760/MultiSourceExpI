@@ -172,7 +172,7 @@ if __name__ == '__main__':
     @hydra.main(version_base=None, config_path="../conf", config_name="config")
     def run(cfg : DictConfig)->None: 
         for s in TASK_LIST: 
-            cal = transfer_fg(cfg, t_ids=0, s_ids=s, alpha=alpha)
+            cal = transfer_fg_fs(cfg, t_ids=0, s_ids=s, alpha=alpha)
 
             acc = cal.acc(empirical=False, finetune = True)
             # json.dumps(acc, indent=4, sort_keys=True)
