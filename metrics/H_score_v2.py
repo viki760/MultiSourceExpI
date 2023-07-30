@@ -25,7 +25,7 @@ def getCov(X):
     return cov
 
 
-def getDiffNN(f, Z):
+def get_score(f, Z):
     #Z=np.argmax(Z, axis=1)
     Covf = getCov(f)
     alphabetZ = list(set(Z))
@@ -38,24 +38,24 @@ def getDiffNN(f, Z):
         g[Z == z] = Ef_z
 
     Covg = getCov(g)
-    dif = np.trace(np.dot(np.linalg.pinv(Covf, rcond=1e-15), Covg))
+    dif = np.trace(Covg) / np.trace(Covf)
     return dif
 
 
-def getDiffNNCov(f, inverse, Z):
-    #Z=np.argmax(Z, axis=1)
+# def getDiffNNCov(f, inverse, Z):
+#     #Z=np.argmax(Z, axis=1)
 
-    alphabetZ = list(set(Z))
-    g = np.zeros_like(f)
-    for z in alphabetZ:
-        l = Z == z
-        fl = f[Z == z, :]
-        Ef_z = np.mean(fl, axis=0)
-        g[Z == z] = Ef_z
+#     alphabetZ = list(set(Z))
+#     g = np.zeros_like(f)
+#     for z in alphabetZ:
+#         l = Z == z
+#         fl = f[Z == z, :]
+#         Ef_z = np.mean(fl, axis=0)
+#         g[Z == z] = Ef_z
 
-    Covg = getCov(g)
-    dif = np.trace(np.dot(inverse, Covg))
-    return dif
+#     Covg = getCov(g)
+#     dif = np.trace(np.dot(inverse, Covg))
+#     return dif
 
 def get_transfer_feature(id_t, id_s, for_optim=False):
     
@@ -75,7 +75,7 @@ def get_transfer_feature(id_t, id_s, for_optim=False):
         
     return labels, features
 
-def Hscore(id_t, id_s, alpha=1.0, include_target=False, for_optim=False, features=None, labels=None):
+def simple_Hscore(id_t, id_s, alpha=1.0, include_target=False, for_optim=False, features=None, labels=None):
     '''
     given target and source list, return h score
     alpha: feature weights (should be an array)
@@ -101,10 +101,9 @@ def Hscore(id_t, id_s, alpha=1.0, include_target=False, for_optim=False, feature
 
     feature = np.array([alpha[i]* features[i] for i in range(len(alpha))]).sum(axis=0)
 
-    Covf = getCov(feature)
-    inverse = np.linalg.pinv(Covf, rcond=1e-15)
+    # Covf = getCov(feature)
 
-    hscore = getDiffNNCov(feature, inverse, labels.cpu().detach().numpy())
+    hscore = get_score(feature, labels.cpu().detach().numpy())
     gc.collect()
 
     return hscore
@@ -113,5 +112,5 @@ def Hscore(id_t, id_s, alpha=1.0, include_target=False, for_optim=False, feature
 
 
 if __name__ == "__main__":
-    hscore = Hscore(0, [1,2], np.array([0.2, 0.6]), True)
+    hscore = simple_Hscore(0, [1,2], np.array([0.2, 0.6]), True)
     print(hscore)

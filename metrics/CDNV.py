@@ -60,11 +60,11 @@ def getCDNV(f, Z):
         Ef[z] = Ef_z
 
     if len(alphabetZ) == 2:
-        class_dist = ((Ef[0] - Ef[1]) * (Ef[0] - Ef[1])).sum()
+        class_dist = ((Ef[0] - Ef[1]) * (Ef[0] - Ef[1])).sum() / 4
     else:
         class_dist = np.var(Ef, axis=0).sum()
     
-    return varf / 2 / class_dist
+    return varf / len(alphabetZ) / class_dist
 
 def get_transfer_feature(id_t, id_s, for_optim=False):
     
@@ -86,7 +86,7 @@ def get_transfer_feature(id_t, id_s, for_optim=False):
 
 def CDNV(id_t, id_s, alpha=1.0, include_target=False, for_optim=False, features=None, labels=None):
     '''
-    given target and source list, return h score
+    given target and source list, return cdnv
     alpha: feature weights (should be an array)
     include_target: whether to insert target feature extractor in linear combination
     for_optim: if true, store features in 

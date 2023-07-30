@@ -61,11 +61,20 @@ class multi_fg(transfer_fg):
 
     def validate_alpha(self):
         for filename in os.listdir(self.alpha_path):
-            if 'alpha.npy' in filename:
+            if 'alpha.npy' in filename and 'hscore' in filename:
                 self.alpha = np.loadtxt(os.path.join(self.alpha_path, filename))
                 # self.alpha = np.insert(self.alpha, 0, 1-self.alpha.sum())
                 _, g_hat = self.get_g()
                 print(filename[:-4]+":\t"+str(self.get_accuracy(g_hat)))
+        self.alpha = np.ones(self.n_source+1) / (self.n_source+1)
+
+    def validate_given_alpha(self, alf, discription = None):
+
+        self.alpha = alf
+        # self.alpha = np.insert(self.alpha, 0, 1-self.alpha.sum())
+        _, g_hat = self.get_g()
+        print(discription+":\t"+str(self.get_accuracy(g_hat)))
+
         
 
     def rand_alpha(self):
@@ -96,7 +105,11 @@ if __name__ == '__main__':
         acc = cal.acc(empirical=False, finetune = False)
         print(acc)
         cal.save(acc, f"accuracy_dict_source={s_l}_")
-        cal.validate_alpha()
+        for i in range(8):
+            alf = np.random.rand(N_TASK)
+            alf/= alf.sum()
+            cal.validate_given_alpha(alf[1:],f'random_alpha_{i}')
+            cal.validate_alpha()
     
 
     run()

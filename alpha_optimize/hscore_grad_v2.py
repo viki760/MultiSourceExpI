@@ -7,7 +7,7 @@ import util.loading as loading
 from fg_train.fixed_f_transfer import transfer_fg
 # from fg_trai  n.fixed_f import fg
 # from metrics.OTCE import OTCE
-from metrics.H_score import Hscore, get_transfer_feature
+from metrics.H_score_v2 import simple_Hscore, get_transfer_feature
 
 
 def maximize_f(f, alpha, lr=0.001, epsilon = 0.0001, num_iters = 100):
@@ -32,7 +32,7 @@ def update_alpha(t_id, s_id, lr, include_target=True):
     n_s_tasks = len(s_id)
     alpha = np.ones(n_s_tasks) / (n_s_tasks + 1)
     label, feature = get_transfer_feature(t_id, s_id, for_optim=True)
-    f = lambda a: Hscore(id_t = t_id, id_s = copy.deepcopy(s_id), alpha = a, include_target = include_target, for_optim=True, features=feature, labels=label)
+    f = lambda a: simple_Hscore(id_t = t_id, id_s = copy.deepcopy(s_id), alpha = a, include_target = include_target, for_optim=True, features=feature, labels=label)
     alpha_opt, score_curve = maximize_f(f, alpha, lr=lr)
     return alpha_opt, score_curve
 
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     save_path = '/home/viki/Codes/MultiSource/3/multi_source_exp/MultiSourceExp/alpha/'
     for lr in lr_list:
         a,s = update_alpha(0, list(range(1,21)), lr=lr, include_target=True)
-        np.savetxt(save_path+'hscore_grad_lr='+str(lr)+'_alpha.npy', a)
-        np.savetxt(save_path+'hscore_grad_lr='+str(lr)+'_scorelist.npy', s)
+        np.savetxt(save_path+'simple_hscore_grad_lr='+str(lr)+'_alpha.npy', a)
+        np.savetxt(save_path+'simple_hscore_grad_lr='+str(lr)+'_scorelist.npy', s)
     # from matplotlib import pyplot as plt
     # plt.plot(s)
